@@ -4,7 +4,7 @@ import { PARTYKIT_HOST } from "@/app/env";
 export default async function GameRoom({
   params,
 }: {
-  params: { roomId: string };
+  params: Promise<{ roomId: string }>;
 }) {
   const { roomId } = await params
 
