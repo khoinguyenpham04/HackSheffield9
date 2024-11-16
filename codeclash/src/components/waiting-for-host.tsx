@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { ClockIcon } from "lucide-react"
 
-export default function ClientWaitForHost() {
+export default function ClientWaitForHost({ message }: { message?: string }) {
   const [time, setTime] = useState(new Date())
 
   useEffect(() => {
@@ -22,9 +22,9 @@ export default function ClientWaitForHost() {
         className="text-center mb-12"
       >
         <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          Waiting for Host
+          {message || "Waiting for Host"}
         </h1>
-        <p className="text-xl text-gray-600">The game will start soon...</p>
+        <p className="text-xl text-gray-600">The game will continue soon...</p>
       </motion.div>
 
       <Card className="w-64 h-64 rounded-full bg-gray-100 shadow-neumorphism flex items-center justify-center relative overflow-hidden">

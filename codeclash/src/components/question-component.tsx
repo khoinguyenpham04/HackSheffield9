@@ -1,67 +1,71 @@
 'use client'
 
-import { useState } from 'react'
-import { Highlight, themes } from 'prism-react-renderer'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import * as Messages from "@/types/messages";
+import { QuestionInfo } from "@/types/messages"
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 
-type props = {
-  answerCallback: (answer: string) => void,
-  qInfo: Messages.QuestionInfo
-}
-export function QuestionComponent({answerCallback, qInfo }: props) {
-  const [answer, setAnswer] = useState('')
-
-  const codeSnippet = `
-function mystery(x) {
-  return x * 2 + 1;
+type Props = {
+  qInfo: QuestionInfo
+  answerCallback: (answer: string) => void
 }
 
-console.log(mystery(5));
-`
+export function QuestionComponent({ qInfo, answerCallback }: Props) {
+  const [selectedAnswer, setSelectedAnswer] = useState<string>("")
+  
+  const handleSubmit = () => {
+    if (selectedAnswer) {
+      answerCallback(selectedAnswer)
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center p-4">
-      <Card className="w-full max-w-2xl bg-white shadow-lg rounded-lg overflow-hidden">
-        <CardHeader className="bg-indigo-600 text-white p-6">
-          <CardTitle className="text-2xl font-bold text-center">Guess the Output!</CardTitle>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
+      <Card className="max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle>{qInfo.questionDescription}</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-2">What will be the output of this code?</h3>
-            <div className="bg-gray-900 rounded-lg overflow-hidden">
-              <Highlight theme={themes.nightOwl} code={codeSnippet.trim()} language="javascript">
-                {({ className, style, tokens, getLineProps, getTokenProps }) => (
-                  <pre className={`${className} p-4 text-sm`} style={style}>
-                    {tokens.map((line, i) => (
-                      <div key={i} {...getLineProps({ line, key: i })}>
-                        {line.map((token, key) => (
-                          <span key={key} {...getTokenProps({ token, key })} />
-                        ))}
-                      </div>
-                    ))}
-                  </pre>
-                )}
-              </Highlight>
-            </div>
+        <CardContent className="space-y-6">
+          {qInfo.codeSnippet && (
+            <SyntaxHighlighter language="javascript" style={vscDarkPlus}>
+              {qInfo.codeSnippet}
+            </SyntaxHighlighter>
+          )}
+
+          <div className="space-y-4">
+            {qInfo.questionType === "multiSelect" ? (
+              <div className="grid grid-cols-2 gap-4">
+                {qInfo.answerOptions?.map((option) => (
+                  <Button
+                    key={option}
+                    variant={selectedAnswer.includes(option) ? "default" : "outline"}
+                    onClick={() => setSelectedAnswer(option)}
+                    className="w-full"
+                  >
+                    {option}
+                  </Button>
+                ))}
+              </div>
+            ) : (
+              <input
+                type="text"
+                value={selectedAnswer}
+                onChange={(e) => setSelectedAnswer(e.target.value)}
+                className="w-full p-2 border rounded"
+                placeholder="Type your answer..."
+              />
+            )}
           </div>
-          <div className="flex items-center space-x-4">
-            <Input
-              type="text"
-              placeholder="Enter your answer"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              className="flex-grow text-lg"
-            />
-            <Button
-              onClick={() => console.log('Submitted:', answer)}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full text-lg transition-all duration-200 ease-in-out transform hover:scale-105"
-            >
-              Submit
-            </Button>
-          </div>
+
+          <Button 
+            onClick={handleSubmit}
+            className="w-full"
+            disabled={!selectedAnswer}
+          >
+            Submit Answer
+          </Button>
         </CardContent>
       </Card>
     </div>

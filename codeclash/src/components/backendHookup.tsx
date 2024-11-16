@@ -1,8 +1,8 @@
+'use client'
+
 import usePartySocket from "partysocket/react";
-
-import { PARTYKIT_HOST } from "@/app/env";
-import { useState } from "react";
-
+import { PARTYKIT_HOST } from "../app/env";
+import { useState, useEffect } from "react";
 import * as Messages from "@/types/messages";
 import { QuestionComponent } from "./question-component";
 import { ResultPageComponent } from "./result-page";
@@ -11,74 +11,133 @@ import { Spinner } from "./loading-spinner";
 import { HostDisplay } from "./host-display";
 import { EndLobby } from "./end-lobby";
 
-export default function BackendHookup(roomID: string) {
-	type loading = {type: "loading"}
-	const [state, setState] = useState<Messages.ServerMessage | loading | null>(null)
+export default function BackendHookup({ roomID }: { roomID: string }) {
+	const [state, setState] = useState<Messages.ServerMessage | { type: "loading" } | null>(null);
 	const [isHost, setHost] = useState<boolean>(false);
-	const [leaderboard, setLeaderboard] = useState<Map<string, number>>(new Map())
+	const [leaderboard, setLeaderboard] = useState<Map<string, number>>(new Map());
+	const [error, setError] = useState<string | null>(null);
+
 	const socket = usePartySocket({
 		host: PARTYKIT_HOST,
 		room: roomID,
 		onMessage(event) {
-			const message = JSON.parse(event.data) as Messages.ServerMessage;
-			if (message.type == "userJoin") {
-				console.log("User is now in the game")
-				setHost(message.isHost)
-			}
-			if (message.type == "leaderboardUpdate") {
-				setLeaderboard(message.leaderboard)
-				return
-			}
-			if (message.type == "userLeaves") {
-				console.log("User left") 
-				// run code for when a user leaves
-				return
-			}
+			try {
+				const message = JSON.parse(event.data) as Messages.ServerMessage;
+				console.log("Received message:", message);
 
-			setState(message)
+				if (message.type === "userJoin") {
+					setHost(message.isHost);
+					console.log("host set")
+					return;
+				} 
+				
+				console.log(isHost)
+
+				if (message.type === "leaderboardUpdate") {
+					setLeaderboard(new Map(Object.entries(message.leaderboard)));
+					return;
+				}
+
+				setState(message);
+			} catch (e) {
+				console.error("Error processing message:", e);
+				setError("Failed to process server message");
+			}
+		},
+		onClose() {
+			setError("Connection lost. Please refresh the page.");
+		},
+		onError() {
+			setError("Failed to connect to game server");
 		}
 	});
 
-	const qAnswerCallback = (answer: string) => {
-		const toSend: Messages.UserMessage = {
-			type: "questionAnswer",
+	const hostControls = {
+		startQuestion: () => {
+			const message: Messages.HostMessage = {
+				sender: "host",
+				type: "startQuestion"
+			};
+			socket.send(JSON.stringify(message));
+			setState({ type: "loading" });
+		},
+		endQuestion: () => {
+			const message: Messages.HostMessage = {
+				sender: "host",
+				type: "endQuestion"
+			};
+			socket.send(JSON.stringify(message));
+		},
+		endGame: () => {
+			const message: Messages.HostMessage = {
+				sender: "host",
+				type: "endGame"
+			};
+			socket.send(JSON.stringify(message));
+		}
+	};
+
+	const answerCallback = (answer: string) => {
+		const message: Messages.UserMessage = {
 			sender: "user",
+			type: "questionAnswer",
 			answer
-		}
-		socket.send(JSON.stringify(toSend))
-		setState({type: "loading"}); // add loading wheel while results are being fetched
-	} 
+		};
+		socket.send(JSON.stringify(message));
+		setState({ type: "loading" });
+	};
 
-	// setup for host messages here
-
-	const displayChooser = () => {
-		if (!state) return <p>Error, state not set</p>
-		if (isHost) return <HostDisplay leaderboard={leaderboard}/>
-		if (state.type == "endLobby") return <EndLobby host={isHost} feedback={state.feedback} leaderboard={state.leaderboard}/>
-		if (state.type == "loading") return <Spinner />
-		if (state.type == "leaderboardUpdate") {
-			console.error("Leaderboard update passed through entire body")
-		}
-		if (state.type == "questionEnd") {
-
-		}
-
-		switch (state.type) {
-			case "userJoin":
-				// Initial waiting for things to start
-				return <ClientWaitForHost />
-				
-			case "questionStart":
-				return <QuestionComponent answerCallback={qAnswerCallback} qInfo={state.questionInfo} />
-			case "feedback":
-				return <ResultPageComponent results={state}/>
-			// case "questionEnd":
-				// return <ClientWaitForHost />
-			case "userLeaves":
-				console.error("User left recieved by state chooser")
-				return <p>User Left state passed to state chooser, error</p>
-		}
-		return <p>Unknown state</p>
+	if (error) {
+		return (
+			<div className="min-h-screen flex items-center justify-center">
+				<div className="bg-red-50 p-4 rounded-lg text-red-700">
+					<p>{error}</p>
+					<button 
+						onClick={() => window.location.reload()}
+						className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+					>
+						Retry
+					</button>
+				</div>
+			</div>
+		);
 	}
-	return(<div>{ displayChooser() }</div>);
+
+	
+	if (isHost) return <div className="min-h-screen"><HostDisplay leaderboard={leaderboard} controls={hostControls} /></div>
+	if (!state ) return <Spinner />;
+
+	return (
+		<div className="min-h-screen">
+			{
+				displayGameState(state, answerCallback)
+			}
+		</div>
+	);
+}
+
+function displayGameState(
+	state: Messages.ServerMessage | { type: "loading" },
+	answerCallback: (answer: string) => void
+) {
+	switch (state.type) {
+		case "loading":
+			return <Spinner />;
+		case "userJoin":
+			return <ClientWaitForHost />;
+		case "questionStart":
+			return <QuestionComponent answerCallback={answerCallback} qInfo={state.questionInfo} />;
+		case "waitingForNext":
+			return (
+				<ClientWaitForHost 
+					message={`Question ${state.currentQuestion} of ${state.totalQuestions} completed`}
+				/>
+			);
+		case "feedback":
+			return <ResultPageComponent results={state} />;
+		case "endLobby":
+			return <EndLobby host={false} feedback={state.feedback} leaderboard={state.leaderboard} />;
+		default:
+			return <ClientWaitForHost />;
+	}
 }
