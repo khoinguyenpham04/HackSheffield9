@@ -33,10 +33,6 @@ export type ServerMessage = {
 	gameOver: boolean,
 	currentQuestion: number,
 	totalQuestions: number
-} | {
-	type: "waitingForNext",
-	currentQuestion: number,
-	totalQuestions: number
 } | ServerMessageFeedback | {
 	type: "endLobby",
 	feedback: string, // if host,, then personalised message

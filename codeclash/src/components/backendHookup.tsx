@@ -127,7 +127,7 @@ function displayGameState(
 			return <ClientWaitForHost />;
 		case "questionStart":
 			return <QuestionComponent answerCallback={answerCallback} qInfo={state.questionInfo} />;
-		case "waitingForNext":
+		case "questionEnd":
 			return (
 				<ClientWaitForHost 
 					message={`Question ${state.currentQuestion} of ${state.totalQuestions} completed`}

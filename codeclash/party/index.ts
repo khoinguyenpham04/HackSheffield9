@@ -23,17 +23,6 @@ export default class Server implements Party.Server {
 		}
 	}
 
-	async saveState() {
-		await this.room.storage.put("gameState", {
-			host: this.host,
-			qNum: this.qNum,
-			inQuestions: this.inQuestions,
-			inEndLobby: this.inEndLobby,
-			userScores: this.userScores,
-			usersPendingAnswers: this.usersPendingAnswers
-		});
-	}
-
 	async onConnect(connection: Party.Connection) {
 		// First connection becomes host
 		if (this.host == "") {
@@ -50,14 +39,20 @@ export default class Server implements Party.Server {
 			type: "userJoin",
 			isHost: false
 		}))
-
+		this.updateScore(connection.id, 0)
+	}
+	
+	updateScore(userID: string, scoreIncrease: number): void {
+		this.userScores.set(userID, (this.userScores.get(userID) || 0) + scoreIncrease)
 		// Update leaderboard for all
 		this.room.broadcast(JSON.stringify({
 			type: "leaderboardUpdate",
-			leaderboard: this.userScores
+			leaderboard: [...this.userScores].reduce((acc, [key, value]) => {
+				acc[key] = value;
+				return acc;
+			}, {})
 		}))
 	}
-
 	async onMessage(message: string, sender: Party.Connection) {
 		// Todo add database support, store info about what users get right and wrong
 		const message_json: Messages.UserMessage | Messages.HostMessage = JSON.parse(message);
@@ -98,7 +93,9 @@ export default class Server implements Party.Server {
 
 					response = {
 						type: "questionEnd",
-						gameOver: false
+						gameOver: false,
+						currentQuestion: this.qNum + 1,
+						totalQuestions: questions.length
 					}
 					this.qNum += 1
 					if (this.qNum >= questions.length) {
@@ -134,7 +131,7 @@ export default class Server implements Party.Server {
 				let feedback
 				if (message_json.answer == questions[this.qNum].answer) {
 					correct = true;
-					this.userScores.set(sender.id, (this.userScores.get(sender.id) || 0) + 1000)
+					this.updateScore(sender.id, 1000)
 				} else {
 					correct = false;
 					feedback = "Feedback for if wrong" // TODO add AI?
