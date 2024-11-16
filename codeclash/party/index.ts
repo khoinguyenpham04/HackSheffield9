@@ -9,6 +9,7 @@ export default class Server implements Party.Server {
 	inQuestions = false;
 	inEndLobby = false;
 	userScores: Map<string, number> = new Map()
+	usersPendingAnswers: Set<string> = new Set() 
 
 	constructor(readonly room: Party.Room) {
 		console.log("Room created:", room.id);
@@ -34,17 +35,39 @@ export default class Server implements Party.Server {
 		const message_json: Messages.UserMessage | Messages.HostMessage = JSON.parse(message);
 		
 		let response: Messages.ServerMessage;
+		if (this.inEndLobby) {
+			console.error(`In end lobby, but new request came through of ${message_json}`);
+		}
+
 		if (message_json.sender == "host") {
 			// message sent by host
 			switch (message_json.type) {
 				case "startQuestion":
+					this.inQuestions = true;
+					
 					response = {
 						type: "questionStart",
 						questionInfo: questions[this.qNum].info
 					}
 					this.room.broadcast(JSON.stringify(response))
+					this.usersPendingAnswers = new Set([...this.room.getConnections()].map((val) => {return val.id}))
+					this.usersPendingAnswers.delete(this.host)
 					break;
 				case "endQuestion":
+					this.inQuestions = false;
+					// see if users have not responded
+					response = {
+						type: "feedback",
+						correct: false,
+						timeout: true,
+						answer: questions[this.qNum].answer,
+						questionInfo: questions[this.qNum].info
+					}
+					for (const user in this.usersPendingAnswers) {
+						// user has failed to answer question
+						this.room.getConnection(user)?.send(JSON.stringify(response))
+					}
+
 					response = {
 						type: "questionEnd",
 						gameOver: false
@@ -54,13 +77,19 @@ export default class Server implements Party.Server {
 						// Game over
 						response.gameOver = true
 						console.log("Game Over")
-						this.inQuestions = false;
 					}
 					
 					this.room.broadcast(JSON.stringify(response))
 					break;
 				case "endGame":
-					console.error("endgame not implemented")
+					response = {
+						type: "endLobby",
+						feedback: "", // personalised feedback unimplemented
+						leaderboard: this.userScores
+					}
+					// TODO personalise feedback
+					this.inEndLobby = true;
+					this.room.broadcast(JSON.stringify(response))
 					break;
 				/* default:
 					console.error(`Host command ${message_json} not supported`)
@@ -72,6 +101,7 @@ export default class Server implements Party.Server {
 		// user responses
 		switch (message_json.type) {
 			case "questionAnswer":
+				if (!this.inQuestions) return
 				let correct;
 				let feedback
 				if (message_json.answer == questions[this.qNum].answer) {
@@ -84,8 +114,13 @@ export default class Server implements Party.Server {
 				response = {
 					type: "feedback",
 					correct,
-					feedback
+					feedback,
+					timeout: false,
+					answer: questions[this.qNum].answer,
+					questionInfo: questions[this.qNum].info
 				}
+				sender.send(JSON.stringify(response))
+				this.usersPendingAnswers.delete(sender.id)
 				break;
 		
 /* 			default:

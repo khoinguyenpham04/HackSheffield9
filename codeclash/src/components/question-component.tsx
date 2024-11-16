@@ -5,8 +5,13 @@ import { Highlight, themes } from 'prism-react-renderer'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import * as Messages from "@/types/messages";
 
-export function QuestionComponent() {
+type props = {
+  answerCallback: (answer: string) => void,
+  qInfo: Messages.QuestionInfo
+}
+export function QuestionComponent({answerCallback, qInfo }: props) {
   const [answer, setAnswer] = useState('')
 
   const codeSnippet = `
