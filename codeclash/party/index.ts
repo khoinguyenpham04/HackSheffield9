@@ -52,7 +52,7 @@ export default class Server implements Party.Server {
 					this.qNum += 1
 					if (this.qNum >= questions.length) {
 						// Game over
-						response.gameOver = false
+						response.gameOver = true
 						console.log("Game Over")
 						this.inQuestions = false;
 					}
