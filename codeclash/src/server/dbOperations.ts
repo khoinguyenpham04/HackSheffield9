@@ -110,9 +110,9 @@ export async function updateUserProfile(userId: string, gameResult: GameResult):
     { user_id: userId },
     {
       $inc: {
-        total_games: 1
+        total_games: 1,
         total_score: playerResult.final_score,
-        total_questions_answered: playerResult.questions_answered
+        total_questions_answered: playerResult.questions_answered,
         games_won: playerResult.game_won ? 1 : 0
         // TODO: Add topics that they get correct or struggle with
       },
@@ -133,3 +133,61 @@ export async function closeConnection(): Promise<void> {
   await client.close();
   console.log("Disconnected from MongoDB Atlas");
 }
+
+
+/* This is how the above functions should be called:
+
+import * as Party from "partykit/server";
+import * as db from './dbOperations';
+
+export default class MyPartyServer extends Party.Server {
+  gameId: string;
+
+  constructor(readonly room: Party.Room) {
+    super(room);
+    this.gameId = `game_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  async onConnect(conn: Party.Connection) {
+    if (this.room.connections.size === 1) {
+      // First player joined, create the game
+      await db.createGame(this.gameId, 5); // 5 rounds
+    }
+    // ... rest of your connection logic
+  }
+
+  async onMessage(message: string, sender: Party.Connection) {
+    // ... your message handling logic
+
+    if (message === 'END_ROUND') {
+      // Update player stats at the end of each round
+      await db.updatePlayerStats(this.gameId, {
+        user_id: sender.id,
+        username: sender.state.username,
+        current_game_stats: sender.state.gameStats
+      });
+    }
+
+    if (message === 'END_GAME') {
+      // Finalize the game
+      const finalGameResult = await db.finalizeGame(this.gameId);
+
+      // Update each player's profile
+      for (const conn of this.room.connections) {
+        await db.updateUserProfile(conn.id, finalGameResult);
+      }
+
+      // Broadcast game results to all players
+      this.room.broadcast(JSON.stringify({
+        type: 'GAME_RESULTS',
+        results: finalGameResult
+      }));
+    }
+  }
+
+  async onClose() {
+    // Close the database connection when the server shuts down
+    await db.closeConnection();
+  }
+}
+*/
