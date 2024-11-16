@@ -36,7 +36,7 @@ export default class Server implements Party.Server {
 
 	async onConnect(connection: Party.Connection) {
 		// First connection becomes host
-		if (this.room.connections.size === 1) {
+		if (this.host == "") {
 			this.host = connection.id;
 			connection.send(JSON.stringify({
 				type: "userJoin",

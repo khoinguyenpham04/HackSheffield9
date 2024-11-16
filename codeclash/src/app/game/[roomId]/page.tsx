@@ -15,11 +15,13 @@ async function checkRoomExists(roomId: string) {
 }
 
 export default async function GameRoom({
-  params: { roomId },
+  params,
 }: {
   params: { roomId: string };
 }) {
-  const roomExists = await checkRoomExists(roomId);
+  const { roomId } = await params
+  const roomExists = true // isnt needed, room auto created if doesnt exist
+  //const roomExists = await checkRoomExists(roomId);
 
   if (!roomExists) {
     return <GameNotFound />;

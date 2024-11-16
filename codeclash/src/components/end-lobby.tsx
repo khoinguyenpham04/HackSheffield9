@@ -11,7 +11,8 @@ type params = {
 }
 export function EndLobby({ host, feedback, leaderboard }: params) {
 	const router = useRouter()
-	const sortedScores = Array.from(leaderboard.entries())
+	console.log(leaderboard)
+	const sortedScores = Array.from(Object.entries(leaderboard))
 		.sort(([, a], [, b]) => b - a)
 
 	return (

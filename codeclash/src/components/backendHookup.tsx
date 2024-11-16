@@ -27,8 +27,11 @@ export default function BackendHookup({ roomID }: { roomID: string }) {
 
 				if (message.type === "userJoin") {
 					setHost(message.isHost);
+					console.log("host set")
 					return;
-				}
+				} 
+				
+				console.log(isHost)
 
 				if (message.type === "leaderboardUpdate") {
 					setLeaderboard(new Map(Object.entries(message.leaderboard)));
@@ -100,15 +103,15 @@ export default function BackendHookup({ roomID }: { roomID: string }) {
 		);
 	}
 
-	if (!state) return <Spinner />;
+	
+	if (isHost) return <div className="min-h-screen"><HostDisplay leaderboard={leaderboard} controls={hostControls} /></div>
+	if (!state ) return <Spinner />;
 
 	return (
 		<div className="min-h-screen">
-			{isHost ? (
-				<HostDisplay leaderboard={leaderboard} controls={hostControls} />
-			) : (
+			{
 				displayGameState(state, answerCallback)
-			)}
+			}
 		</div>
 	);
 }
