@@ -1,35 +1,39 @@
 export type HostMessage = {
-	"type": "startQuestion" | "endQuestion"
+	sender: "host",
+	type: "startQuestion" | "endQuestion" | "endGame"
 }
 
 export type UserMessage = {
-	"type": "questionAnswer",
-	"answer": string
-}
-
-export enum QuestionType {
-	"number",
-	"string",
-	"multiSelect"
+	sender: "user",
+	type: "questionAnswer",
+	answer: string
 }
 
 export type QuestionInfo = {
-	"questionType": QuestionType,
-	"questionDescription": string,
-	"codeSnippet": string,
-	answerOptions: [string] | null
+	questionType: "number" | "string" | "multiSelect",
+	questionDescription: string,
+	codeSnippet: string,
+	answerOptions?: string[]
 }
 
 export type ServerMessage = {
-	"type": "questionStart",
-	"questionInfo": QuestionInfo
+	type: "questionStart",
+	questionInfo: QuestionInfo
 } | {
-	"type": "questionEnd"
+	type: "questionEnd",
+	gameOver: boolean
 } | {
-	"type": "feedback",
-	"correct": boolean,
-	"feedback": string
+	type: "feedback",
+	correct: boolean,
+	answer?: string,
+	feedback?: string
 } | {
-	"type": "endLobby",
-	"feedback": string
+	type: "endLobby",
+	feedback: string,
+} | {
+	type: "userJoin",
+	isHost: boolean
+} | {
+	type: "userLeaves",
+	isHost: boolean
 }
