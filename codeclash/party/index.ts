@@ -9,6 +9,7 @@ export default class Server implements Party.Server {
 	inQuestions = false;
 	inEndLobby = false;
 	userScores: Map<string, number> = new Map()
+	usersPendingAnswers: Set<string> = new Set() 
 
 	constructor(readonly room: Party.Room) {
 		console.log("Room created:", room.id);
@@ -43,8 +44,21 @@ export default class Server implements Party.Server {
 						questionInfo: questions[this.qNum].info
 					}
 					this.room.broadcast(JSON.stringify(response))
+					this.usersPendingAnswers = new Set([...this.room.getConnections()].map((val) => {return val.id}))
+					this.usersPendingAnswers.delete(this.host)
 					break;
 				case "endQuestion":
+					// see if users have not responded
+					response = {
+						type: "feedback",
+						correct: false,
+						timeout: true
+					}
+					for (const user in this.usersPendingAnswers) {
+						// user has failed to answer question
+						this.room.getConnection(user)?.send(JSON.stringify(response))
+					}
+
 					response = {
 						type: "questionEnd",
 						gameOver: false
@@ -84,8 +98,11 @@ export default class Server implements Party.Server {
 				response = {
 					type: "feedback",
 					correct,
-					feedback
+					feedback,
+					timeout: false
 				}
+				sender.send(JSON.stringify(response))
+				this.usersPendingAnswers.delete(sender.id)
 				break;
 		
 /* 			default:

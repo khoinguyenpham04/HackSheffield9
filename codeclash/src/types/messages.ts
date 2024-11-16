@@ -26,7 +26,8 @@ export type ServerMessage = {
 	type: "feedback",
 	correct: boolean,
 	answer?: string,
-	feedback?: string
+	feedback?: string,
+	timeout: boolean
 } | {
 	type: "endLobby",
 	feedback: string,
