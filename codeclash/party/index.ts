@@ -32,6 +32,7 @@ export default class Server implements Party.Server {
 	}
 
 	async onMessage(message: string, sender: Party.Connection) {
+		// Todo add database support, store info about what users get right and wrong
 		const message_json: Messages.UserMessage | Messages.HostMessage = JSON.parse(message);
 		
 		let response: Messages.ServerMessage;
@@ -87,7 +88,7 @@ export default class Server implements Party.Server {
 						feedback: "", // personalised feedback unimplemented
 						leaderboard: this.userScores
 					}
-					// TODO personalise feedback
+					// TODO personalise feedback, general feedback of everyone for host
 					this.inEndLobby = true;
 					this.room.broadcast(JSON.stringify(response))
 					break;
