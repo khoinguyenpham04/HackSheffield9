@@ -35,10 +35,16 @@ export default class Server implements Party.Server {
 		const message_json: Messages.UserMessage | Messages.HostMessage = JSON.parse(message);
 		
 		let response: Messages.ServerMessage;
+		if (this.inEndLobby) {
+			console.error(`In end lobby, but new request came through of ${message_json}`);
+		}
+
 		if (message_json.sender == "host") {
 			// message sent by host
 			switch (message_json.type) {
 				case "startQuestion":
+					this.inQuestions = true;
+					
 					response = {
 						type: "questionStart",
 						questionInfo: questions[this.qNum].info
@@ -48,6 +54,7 @@ export default class Server implements Party.Server {
 					this.usersPendingAnswers.delete(this.host)
 					break;
 				case "endQuestion":
+					this.inQuestions = false;
 					// see if users have not responded
 					response = {
 						type: "feedback",
@@ -68,13 +75,18 @@ export default class Server implements Party.Server {
 						// Game over
 						response.gameOver = true
 						console.log("Game Over")
-						this.inQuestions = false;
 					}
 					
 					this.room.broadcast(JSON.stringify(response))
 					break;
 				case "endGame":
-					console.error("endgame not implemented")
+					response = {
+						type: "endLobby",
+						feedback: "" // personalised feedback unimplemented
+					}
+					// TODO personalise feedback
+					this.inEndLobby = true;
+					this.room.broadcast(JSON.stringify(response))
 					break;
 				/* default:
 					console.error(`Host command ${message_json} not supported`)
@@ -86,6 +98,7 @@ export default class Server implements Party.Server {
 		// user responses
 		switch (message_json.type) {
 			case "questionAnswer":
+				if (!this.inQuestions) return
 				let correct;
 				let feedback
 				if (message_json.answer == questions[this.qNum].answer) {
