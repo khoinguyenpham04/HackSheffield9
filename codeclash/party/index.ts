@@ -15,19 +15,46 @@ export default class Server implements Party.Server {
 		console.log("Room created:", room.id);
 	}
 
+	async onStart() {
+		// Load any saved state
+		const savedState = await this.room.storage.get("gameState");
+		if (savedState) {
+			Object.assign(this, savedState);
+		}
+	}
+
+	async saveState() {
+		await this.room.storage.put("gameState", {
+			host: this.host,
+			qNum: this.qNum,
+			inQuestions: this.inQuestions,
+			inEndLobby: this.inEndLobby,
+			userScores: this.userScores,
+			usersPendingAnswers: this.usersPendingAnswers
+		});
+	}
+
 	async onConnect(connection: Party.Connection) {
-		if (this.room.connections.size == 1) {
+		// First connection becomes host
+		if (this.host == "") {
 			this.host = connection.id;
-			
 			connection.send(JSON.stringify({
-				"type": "userJoin",
-				"isHost": true
+				type: "userJoin",
+				isHost: true
 			}))
 			return;
 		}
+
+		// Send current game state to new players
 		connection.send(JSON.stringify({
-			"type": "userJoin",
-			"isHost": false
+			type: "userJoin",
+			isHost: false
+		}))
+
+		// Update leaderboard for all
+		this.room.broadcast(JSON.stringify({
+			type: "leaderboardUpdate",
+			leaderboard: this.userScores
 		}))
 	}
 

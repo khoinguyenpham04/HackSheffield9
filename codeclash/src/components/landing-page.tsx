@@ -4,9 +4,23 @@ import { useState } from 'react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ChevronRight, Code, Play } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { generateId } from '@/lib/utils'
 
 export function LandingPage() {
   const [gameId, setGameId] = useState('')
+  const router = useRouter()
+
+  const handleJoinGame = () => {
+    if (gameId.trim()) {
+      router.push(`/game/${gameId}`)
+    }
+  }
+
+  const handleCreateGame = () => {
+    const newGameId = generateId()
+    router.push(`/game/${newGameId}`)
+  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4">
@@ -49,16 +63,21 @@ export function LandingPage() {
             />
             <Code className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={20} />
           </div>
-          <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+          <Button
+            onClick={handleJoinGame}
+            className="w-full sm:w-auto bg-blue-500 hover:bg-blue-600"
+            disabled={!gameId.trim()}
+          >
             Join Game
-            <ChevronRight className="ml-2" size={20} />
           </Button>
-        </div>
-        
-        <div className="pt-4">
-          <Button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition duration-200 flex items-center justify-center mx-auto">
-            Start New Game
-            <Play className="ml-2" size={20} />
+          
+          <span className="text-gray-400">or</span>
+          
+          <Button
+            onClick={handleCreateGame}
+            className="w-full sm:w-auto bg-green-500 hover:bg-green-600"
+          >
+            Create New Game
           </Button>
         </div>
       </main>
