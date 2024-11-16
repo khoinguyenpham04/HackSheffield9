@@ -59,7 +59,9 @@ export default class Server implements Party.Server {
 					response = {
 						type: "feedback",
 						correct: false,
-						timeout: true
+						timeout: true,
+						answer: questions[this.qNum].answer,
+						questionInfo: questions[this.qNum].info
 					}
 					for (const user in this.usersPendingAnswers) {
 						// user has failed to answer question
@@ -82,7 +84,8 @@ export default class Server implements Party.Server {
 				case "endGame":
 					response = {
 						type: "endLobby",
-						feedback: "" // personalised feedback unimplemented
+						feedback: "", // personalised feedback unimplemented
+						leaderboard: this.userScores
 					}
 					// TODO personalise feedback
 					this.inEndLobby = true;
@@ -112,7 +115,9 @@ export default class Server implements Party.Server {
 					type: "feedback",
 					correct,
 					feedback,
-					timeout: false
+					timeout: false,
+					answer: questions[this.qNum].answer,
+					questionInfo: questions[this.qNum].info
 				}
 				sender.send(JSON.stringify(response))
 				this.usersPendingAnswers.delete(sender.id)

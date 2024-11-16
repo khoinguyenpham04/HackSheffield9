@@ -2,6 +2,7 @@
 
 import { Highlight, themes } from 'prism-react-renderer'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import * as Messages from "@/types/messages";
 
 const codeSnippet = `
 function mystery(x) {
@@ -10,8 +11,10 @@ function mystery(x) {
 
 console.log(mystery(5));
 `
-
-export function ResultPageComponent() {
+type params = {
+  results: Messages.ServerMessageFeedback
+}
+export function ResultPageComponent({ state }: params) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 p-8">
       <div className="container mx-auto max-w-6xl">
