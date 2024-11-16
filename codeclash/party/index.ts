@@ -41,7 +41,7 @@ export default class Server implements Party.Server {
 		}))
 		this.updateScore(connection.id, 0)
 	}
-	
+
 	updateScore(userID: string, scoreIncrease: number): void {
 		this.userScores.set(userID, (this.userScores.get(userID) || 0) + scoreIncrease)
 		// Update leaderboard for all
@@ -110,7 +110,10 @@ export default class Server implements Party.Server {
 					response = {
 						type: "endLobby",
 						feedback: "", // personalised feedback unimplemented
-						leaderboard: this.userScores
+						leaderboard: [...this.userScores].reduce((acc, [key, value]) => {
+							acc[key] = value;
+							return acc;
+						}, {})
 					}
 					// TODO personalise feedback, general feedback of everyone for host
 					this.inEndLobby = true;

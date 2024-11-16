@@ -36,7 +36,7 @@ export type ServerMessage = {
 } | ServerMessageFeedback | {
 	type: "endLobby",
 	feedback: string, // if host,, then personalised message
-	leaderboard: Map<string, number>
+	leaderboard: object
 } | {
 	type: "userJoin",
 	isHost: boolean
