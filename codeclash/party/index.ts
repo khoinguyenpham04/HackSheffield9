@@ -12,10 +12,11 @@ export default class Server implements Party.Server {
 	userScores: Map<string, number> = new Map()
 	usersPendingAnswers: Set<string> = new Set() 
 	MAX_QUESTIONS = 3
+	gameStarted = false;
+	correctUsers: Set<string> = new Set()
 
 	constructor(readonly room: Party.Room) {
 		console.log("Room created:", room.id);
-		db.createGame(room.id, this.MAX_QUESTIONS)
 	}
 
 
@@ -63,6 +64,14 @@ export default class Server implements Party.Server {
 			switch (message_json.type) {
 				case "startQuestion":
 					this.inQuestions = true;
+					if (!this.gameStarted) {
+						this.gameStarted = true
+						const players: { user_id: string, username: string }[] = []
+						for (const playID in this.room.getConnections()) {
+							players.push({user_id: playID, username: playID});
+						}
+						db.createGame(this.room.id, this.MAX_QUESTIONS, players)
+					}
 					
 					response = {
 						type: "questionStart",
@@ -99,7 +108,8 @@ export default class Server implements Party.Server {
 						response.gameOver = true
 						console.log("Game Over")
 					}
-					
+					db.updatePlayerStats(this.room.id, [...this.correctUsers], questions[this.qNum].topic)
+					this.correctUsers = new Set()
 					this.room.broadcast(JSON.stringify(response))
 					break;
 				case "endGame":
@@ -133,11 +143,11 @@ export default class Server implements Party.Server {
 				if (message_json.answer == questions[this.qNum].answer) {
 					correct = true;
 					this.updateScore(sender.id, 1000)
+					this.correctUsers.add(sender.id)
 				} else {
 					correct = false;
 					feedback = questions[this.qNum].explanation
 				}
-				// todo write what user gotten to DB with topic
 
 				response = {
 					type: "feedback",
