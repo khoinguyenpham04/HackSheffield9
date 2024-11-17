@@ -25,6 +25,7 @@ export async function finalizeGame(): Promise<undefined> {
   const feedback: Map<string, string> = new Map()
   const url = "http://52.56.54.123:5000/analyze-quiz";
   const body = JSON.stringify(gameState);
+  console.log(body)
 
   const init = {
     body: JSON.stringify(body),
