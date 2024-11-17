@@ -11,7 +11,6 @@ export default class Server implements Party.Server {
 	inEndLobby = false;
 	userScores: Map<string, number> = new Map()
 	usersPendingAnswers: Set<string> = new Set() 
-	usersQCorrect: Set<string> = new Set()
 	MAX_QUESTIONS = 3
 
 	constructor(readonly room: Party.Room) {
@@ -100,9 +99,6 @@ export default class Server implements Party.Server {
 						response.gameOver = true
 						console.log("Game Over")
 					}
-					// write usersAnswerQ correct to DB
-
-					this.usersQCorrect = new Set()
 					
 					this.room.broadcast(JSON.stringify(response))
 					break;
@@ -115,10 +111,11 @@ export default class Server implements Party.Server {
 							return acc;
 						}, {})
 					}
+					await db.finalizeGame(this.room.id, Object.keys(this.userScores).reduce((a, b) =>{ return (this.userScores!.get(a)! > this.userScores!.get(b)!) ? a : b }))
 					// TODO personalise feedback, general feedback of everyone for host
+
 					this.inEndLobby = true;
 					this.room.broadcast(JSON.stringify(response))
-					db.finalizeGame(this.room.id, Object.keys(this.userScores).reduce((a, b) =>{ return (this.userScores!.get(a)! > this.userScores!.get(b)!) ? a : b }))
 					break;
 				/* default:
 					console.error(`Host command ${message_json} not supported`)
@@ -136,11 +133,12 @@ export default class Server implements Party.Server {
 				if (message_json.answer == questions[this.qNum].answer) {
 					correct = true;
 					this.updateScore(sender.id, 1000)
-					this.usersQCorrect.add(sender.id)
 				} else {
 					correct = false;
-					feedback = "Feedback for if wrong" // TODO add AI?
+					feedback = questions[this.qNum].explanation
 				}
+				// todo write what user gotten to DB with topic
+
 				response = {
 					type: "feedback",
 					correct,
