@@ -1,9 +1,40 @@
-export async function meow() {
-  return await fetch("https://example.com", {
+const gameState : {gameID : string, players: Player[]} = {gameID: "", players: []}
+type Player = {
+  userID : string,
+  username : string, 
+  answers : {questionID : string, question_type : string, userAnswer : string, rightAnswer : string, isCorrect : boolean}[]
+}
+
+export async function createGame(gameID: string) {
+  gameState.gameID = gameID
+}
+
+export async function addUserAnswer(userID: string, questionID : string, question_type: string, userAnswer : string, rightAnswer: string, isCorrect: boolean) {
+  if (!gameState.players.find(player => player.userID == userID)) {
+    gameState.players.push({userID, username : userID, answers : []})
+  }
+  const qResponse = {questionID, question_type, userAnswer, rightAnswer, isCorrect}
+  gameState.players.find(player => player.userID == userID)!.answers.push(qResponse)
+}
+
+type LLMReturn = {
+  generalFeedback : string,
+  userSpecificFeedback: string
+}
+export async function finalizeGame(): Promise<LLMReturn> {
+  const someHost = "https://examples.cloudflareworkers.com/demos";
+  const url = someHost + "/requests/json";
+  const body = JSON.stringify(gameState);
+
+  const init = {
+    body: JSON.stringify(body),
+    method: "POST",
     headers: {
-      "X-Source": "Cloudflare-Workers",
+      "content-type": "application/json;charset=UTF-8",
     },
-  });
+  };
+  const response = await fetch(url, init);
+  return await response.json();
 }
 
 /*
