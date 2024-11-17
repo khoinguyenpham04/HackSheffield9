@@ -13,8 +13,9 @@ const database_name = 'hacksheffield_codeclash';
 export interface UserGameData {
   user_id: string;
   username: string;
-  rounds: number;
-  rounds_won: number;
+  questions_answered: number;
+  questions_correct: number;
+  questions_incorrect: number;
   score: number;
   topics_correct: string[];
   topics_incorrect: string[];
@@ -61,38 +62,72 @@ async function connectToDatabase(): Promise<Db> {
   return db;
 }
 
-//Saves new game to the database, the status of said database will be "in_progress"
-export async function createGame(gameId: string, totalRounds: number): Promise<string> {
+export async function createGame(gameId: string, totalRounds: number, players: { user_id: string, username: string }[]): Promise<string> {
   const db = await connectToDatabase();
   const collection = db.collection<GameData>("games");
+
+  const initializedPlayers: UserGameData[] = players.map(player => ({
+    user_id: player.user_id,
+    username: player.username,
+    questions_answered: 0,
+    questions_correct: 0,
+    questions_incorrect: 0,
+    score: 0,
+    topics_correct: [],
+    topics_incorrect: []
+  }));
 
   await collection.insertOne({
     game_id: gameId,
     date: new Date(),
-    players: [],
+    players: initializedPlayers,
     total_rounds: totalRounds,
-    player_count: 0,
+    player_count: players.length,
     status: 'in_progress'
   });
 
   return gameId;
 }
 
-//Updates the player data in the current game being played
-export async function updatePlayerStats(gameId: string, playerData: UserGameData): Promise<void> {
+export async function updatePlayerStats(
+    gameId: string,
+    correctPlayerIds: string[],
+    questionTopic: string
+): Promise<void> {
   const db = await connectToDatabase();
   const gamesCollection = db.collection<GameData>("games");
 
+  // Increment questions_answered for all players
   await gamesCollection.updateOne(
-      { game_id: gameId, "players.user_id": { $ne: playerData.user_id } },
+      { game_id: gameId },
+      { $inc: { "players.$[].questions_answered": 1 } }
+  );
+
+  // Update players who answered correctly
+  await gamesCollection.updateOne(
+      { game_id: gameId },
       {
-        $push: { players: playerData },
-        $inc: { player_count: 1 }
+        $inc: { "players.$[elem].questions_correct": 1, "players.$[elem].score": 1 },
+        $push: { "players.$[elem].topics_correct": questionTopic }
+      },
+      {
+        arrayFilters: [{ "elem.user_id": { $in: correctPlayerIds } }]
+      }
+  );
+
+  // Update players who answered incorrectly
+  await gamesCollection.updateOne(
+      { game_id: gameId },
+      {
+        $inc: { "players.$[elem].questions_incorrect": 1 },
+        $push: { "players.$[elem].topics_incorrect": questionTopic }
+      },
+      {
+        arrayFilters: [{ "elem.user_id": { $nin: correctPlayerIds } }]
       }
   );
 }
 
-//When a game is finished, call this function and it marks its status as finished and adds the completion date/time
 export async function finalizeGame(gameId: string, winnerId: string): Promise<WithId<GameData>> {
   const db = await connectToDatabase();
   const gamesCollection = db.collection<GameData>("games");
@@ -137,7 +172,6 @@ export async function finalizeGame(gameId: string, winnerId: string): Promise<Wi
   }
 }
 
-//Gets the game data for a specific gameID
 export async function getGameResult(gameId: string): Promise<GameData | null> {
   const db = await connectToDatabase();
   const gamesCollection = db.collection<GameData>("games");
@@ -145,7 +179,6 @@ export async function getGameResult(gameId: string): Promise<GameData | null> {
   return await gamesCollection.findOne({ game_id: gameId });
 }
 
-//Updates the user's profile after a game
 export async function updateUserProfile(userId: string, gameData: GameData): Promise<void> {
   const db = await connectToDatabase();
   const userCollection = db.collection<UserProfile>("user_profiles");
