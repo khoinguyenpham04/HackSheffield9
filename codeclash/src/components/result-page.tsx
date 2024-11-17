@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { CheckCircle2, XCircle, Trophy, Star, Meh } from 'lucide-react'
+import { CheckCircle2, XCircle, Trophy, Meh } from 'lucide-react'
 import type { ServerMessageFeedback } from "@/types/messages"
 import { useState, useEffect } from "react"
 import confetti from 'canvas-confetti'

@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Code, Zap, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { generateId } from '@/lib/utils'
-import { Cover } from './ui/cover'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -99,11 +98,11 @@ function submitSolution(code) {
           transition={{ duration: 0.8, delay: 0.2 }}
         >
           Code Battles at <br /> 
-          <Cover>
+          
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500">
               Lightning Speed
             </span>
-          </Cover>
+          
         </motion.h1>
         
         <motion.p 

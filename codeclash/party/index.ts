@@ -1,3 +1,4 @@
+
 import type * as Party from "partykit/server";
 import * as Messages from "@/types/messages"
 
@@ -48,6 +49,7 @@ export default class Server implements Party.Server {
 		this.room.broadcast(JSON.stringify({
 			type: "leaderboardUpdate",
 			leaderboard: [...this.userScores].reduce((acc, [key, value]) => {
+				//@ts-ignore
 				acc[key] = value;
 				return acc;
 			}, {})
@@ -111,6 +113,7 @@ export default class Server implements Party.Server {
 						type: "endLobby",
 						feedback: "", // personalised feedback unimplemented
 						leaderboard: [...this.userScores].reduce((acc, [key, value]) => {
+							//@ts-ignore
 							acc[key] = value;
 							return acc;
 						}, {})
