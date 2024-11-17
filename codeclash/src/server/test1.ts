@@ -1,32 +1,48 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
+import { createGame, updatePlayerStats, finalizeGame, getGameResult, getUserProfile, closeConnection } from './dbOperations';
 
-import { MongoClient, ServerApiVersion } from 'mongodb';
-
-const uri = process.env.MONGODB_URI;
-if (!uri) {
-  throw new Error('MONGODB_URI is not defined in the environment variables');
-}
-
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
-
-async function run() {
+async function runTests() {
   try {
-    // Connect the client to the server (optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // Test createGame
+    const gameId = 'test-game-001';
+    const totalRounds = 5;
+    const players = [
+      { user_id: 'user1', username: 'Alice' },
+      { user_id: 'user2', username: 'Bob' },
+      { user_id: 'user3', username: 'Charlie' }
+    ];
+    await createGame(gameId, totalRounds, players);
+    console.log('Game created successfully');
+
+    // Test updatePlayerStats
+    const topics = ['JavaScript', 'Python', 'Java', 'C++', 'Ruby'];
+    for (let i = 0; i < totalRounds; i++) {
+      const correctPlayers = players
+          .filter(() => Math.random() > 0.5)
+          .map(p => p.user_id);
+      await updatePlayerStats(gameId, correctPlayers, topics[i]);
+      console.log(`Round ${i + 1} updated`);
+    }
+
+    // Test finalizeGame
+    const winnerId = players[Math.floor(Math.random() * players.length)].user_id;
+    const finalizedGame = await finalizeGame(gameId, winnerId);
+    console.log('Game finalized:', finalizedGame);
+
+    // Test getGameResult
+    const gameResult = await getGameResult(gameId);
+    console.log('Game result:', gameResult);
+
+    // Test getUserProfile
+    for (const player of players) {
+      const userProfile = await getUserProfile(player.user_id);
+      console.log(`User profile for ${player.username}:`, userProfile);
+    }
+
+  } catch (error) {
+    console.error('An error occurred:', error);
   } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
+    await closeConnection();
   }
 }
-run().catch(console.dir);
+
+runTests();
