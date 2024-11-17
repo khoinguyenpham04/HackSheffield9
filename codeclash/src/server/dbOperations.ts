@@ -1,9 +1,9 @@
-const gameState : {gameID : string, players: Player[]} = {gameID: "", players: []}
 type Player = {
   userID : string,
   username : string, 
   answers : {questionID : string, question_type : string, userAnswer : string, rightAnswer : string, isCorrect : boolean}[]
 }
+const gameState : {gameID : string, players: Player[]} = {gameID: "", players: []}
 
 export async function createGame(gameID: string) {
   gameState.gameID = gameID
@@ -19,11 +19,11 @@ export async function addUserAnswer(userID: string, questionID : string, questio
 
 type LLMReturn = {
   generalFeedback : string,
-  userSpecificFeedback: string
-}
-export async function finalizeGame(): Promise<LLMReturn> {
-  const someHost = "https://examples.cloudflareworkers.com/demos";
-  const url = someHost + "/requests/json";
+  userSpecificFeedback: Map<string, string>}
+
+export async function finalizeGame(): Promise<undefined> {
+  const feedback: Map<string, string> = new Map()
+  const url = "http://52.56.54.123:5000/analyze-quiz";
   const body = JSON.stringify(gameState);
 
   const init = {
@@ -34,7 +34,9 @@ export async function finalizeGame(): Promise<LLMReturn> {
     },
   };
   const response = await fetch(url, init);
-  return await response.json();
+  const resp = await response.json();
+  console.log(resp)
+  return 
 }
 
 /*
