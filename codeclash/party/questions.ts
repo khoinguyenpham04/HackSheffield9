@@ -1,6 +1,6 @@
 import * as Messages from "@/types/messages"
 
-export type Question = {info: Messages.QuestionInfo, answer: string, topic: string}
+export type Question = {info: Messages.QuestionInfo, answer: string, topic: string, explanation: string}
 
 export const questions: Question[] = [
   {
@@ -19,7 +19,8 @@ console.log(arr);`,
       ]
     },
     answer: "[0, 1, 2, 3, 4]",
-    topic: "arrays"
+    topic: "arrays",
+	explanation: "test explanation"
   },
   {
     info: {
@@ -37,7 +38,8 @@ console.log(arr);`,
       ]
     },
     answer: "4",
-    topic: "promises"
+    topic: "promises",
+	explanation: "very much a test explanation"
   },
   {
     info: {
@@ -55,7 +57,8 @@ console.log(arr[0].a);`,
       ]
     },
     answer: "2",
-    topic: "references"
+    topic: "references",
+	explanation: "are you even reading this?"
   },
   {
     info: {
@@ -65,7 +68,8 @@ console.log(arr[0].a);`,
 const result = numbers.reduce((sum, num) => sum + num, 0);`
     },
     answer: "15",
-    topic: "arrays"
+    topic: "arrays",
+	explanation: "testing"
   },
   {
     info: {
@@ -83,6 +87,7 @@ console.log(example());`,
       ]
     },
     answer: "Promise { 'Hello' }",
-    topic: "async"
+    topic: "async",
+	explanation: "meow"
   }
 ]
