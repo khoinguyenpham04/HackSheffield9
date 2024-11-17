@@ -2,7 +2,7 @@
 
 import usePartySocket from "partysocket/react";
 import { PARTYKIT_HOST } from "../app/env";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import * as Messages from "@/types/messages";
 import { QuestionComponent } from "./question-component";
 import { ResultPageComponent } from "./result-page";
