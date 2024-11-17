@@ -35,7 +35,7 @@ export function ResultPageComponent({ results }: Props) {
     if (results.correct) {
       return "Great job! You've mastered this concept. Keep up the excellent work!"
     }
-    return `Don't worry! The correct answer was "${results.answer}". Let's understand why...`
+    return `Don't worry! The correct answer was "${results.answer}". Let's understand why... \n ${results.feedback}`
   }
 
   return (

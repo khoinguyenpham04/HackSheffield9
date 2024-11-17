@@ -35,8 +35,10 @@ export async function finalizeGame(): Promise<LLMReturn> {
     },
   };
   try {
+    console.log(init)
     const response = await fetch(url, init);
     if (response.status !== 200) {
+      console.log(response)
       console.error("LLM not loading");
       for (const p of gameState.players) {
         feedback.set(p.userID, "Specific feedback");
