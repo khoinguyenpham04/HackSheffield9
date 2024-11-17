@@ -137,6 +137,7 @@ function displayGameState(
 		case "feedback":
 			return <ResultPageComponent results={state} />;
 		case "endLobby":
+			//@ts-expect-error
 			return <EndLobby host={false} feedback={state.feedback} leaderboard={state.leaderboard} />;
 		default:
 			return <ClientWaitForHost />;
