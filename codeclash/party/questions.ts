@@ -1,8 +1,15 @@
 import * as Messages from "@/types/messages"
+import { fetchLeetCodeQuestions } from "@/components/api/leetcode-questions"
 
-export type Question = {info: Messages.QuestionInfo, answer: string, topic: string, explanation: string}
+export type Question = {
+  info: Messages.QuestionInfo,
+  answer: string,
+  topic: string,
+  explanation: string
+}
 
-export const questions: Question[] = [
+// Your existing questions
+export const existingQuestions: Question[] = [
   {
     info: {
       questionType: "multiSelect",
@@ -20,7 +27,7 @@ console.log(arr);`,
     },
     answer: "[0, 1, 2, 3, 4]",
     topic: "arrays",
-	explanation: "test explanation"
+    explanation: "test explanation"
   },
   {
     info: {
@@ -39,7 +46,7 @@ console.log(arr);`,
     },
     answer: "4",
     topic: "promises",
-	explanation: "very much a test explanation"
+    explanation: "very much a test explanation"
   },
   {
     info: {
@@ -58,7 +65,7 @@ console.log(arr[0].a);`,
     },
     answer: "2",
     topic: "references",
-	explanation: "are you even reading this?"
+    explanation: "are you even reading this?"
   },
   {
     info: {
@@ -69,7 +76,7 @@ const result = numbers.reduce((sum, num) => sum + num, 0);`
     },
     answer: "15",
     topic: "arrays",
-	explanation: "testing"
+    explanation: "testing"
   },
   {
     info: {
@@ -88,6 +95,21 @@ console.log(example());`,
     },
     answer: "Promise { 'Hello' }",
     topic: "async",
-	explanation: "meow"
+    explanation: "meow"
   }
-]
+];
+
+// Initialize combined questions
+export let questions: Question[] = existingQuestions;
+
+// Function to initialize questions including LeetCode ones
+export async function initializeQuestions() {
+  try {
+    const leetCodeQuestions = await fetchLeetCodeQuestions();
+    questions = [...existingQuestions, ...leetCodeQuestions];
+    return questions;
+  } catch (error) {
+    console.error("Failed to fetch LeetCode questions:", error);
+    return existingQuestions; // Fallback to existing questions if fetch fails
+  }
+}

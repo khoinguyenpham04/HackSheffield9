@@ -1,11 +1,21 @@
 import BackendHookup from "@/components/backendHookup";
+import { fetchLeetCodeQuestions } from "@/app/api/leetcode-questions";
 
 export default async function GameRoom({
-  params,
-}: {
-  params: Promise<{ roomId: string }>;
+                                         params,
+                                       }: {
+  params: { roomId: string };
 }) {
-  const { roomId } = await params
+  // Fetch LeetCode questions
+  const questions = await fetchLeetCodeQuestions();
 
-  return <BackendHookup roomID={roomId} />;
-} 
+  // Select a random question for the game
+  const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+
+  return (
+      <BackendHookup
+          roomID={params.roomId}
+          initialQuestion={randomQuestion}
+      />
+  );
+}

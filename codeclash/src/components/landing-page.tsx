@@ -33,9 +33,21 @@ export function LandingPage() {
     }
   }
 
-  const handleCreateGame = () => {
+  const handleCreateGame = async () => {
     const newGameId = generateId()
-    router.push(`/game/${newGameId}`)
+
+    try {
+      const response = await fetch('/api/leetcode-questions')
+      const questions = await response.json()
+
+      // Store the questions in localStorage or state management solution
+      localStorage.setItem(`game_${newGameId}_questions`, JSON.stringify(questions))
+
+      router.push(`/game/${newGameId}`)
+    } catch (error) {
+      console.error('Failed to fetch LeetCode questions:', error)
+      // Handle error (e.g., show an error message to the user)
+    }
   }
 
   const features = [
