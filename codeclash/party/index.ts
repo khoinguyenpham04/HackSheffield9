@@ -132,7 +132,7 @@ export default class Server implements Party.Server {
 					}
 					for (const pID of userSpecificFeedback.keys()) {
 						response.feedback = userSpecificFeedback.get(pID)!
-						this.room.getConnection(pID)!.send(JSON.stringify(response))
+						this.room.getConnection(pID)?.send(JSON.stringify(response))
 					}
 					// TODO personalise feedback, general feedback of everyone for host
 					response.feedback = generalFeedback
