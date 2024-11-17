@@ -12,6 +12,9 @@
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-slot": "^1.1.0",
+    "@tsparticles/engine": "^3.5.0",
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.5.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.0",
