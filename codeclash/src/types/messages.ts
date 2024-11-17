@@ -9,11 +9,12 @@ export type UserMessage = {
 	answer: string
 }
 
-export type QuestionInfo = {
-	questionType: "number" | "string" | "multiSelect",
-	questionDescription: string,
-	codeSnippet: string,
-	answerOptions?: string[]
+export interface QuestionInfo {
+	title: string;
+	questionDescription: string;
+	questionType: "multiSelect" | "string";
+	codeSnippet: string;
+	answerOptions?: string[];
 }
 
 export type ServerMessageFeedback = {
