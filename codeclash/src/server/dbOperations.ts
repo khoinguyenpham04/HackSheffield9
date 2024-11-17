@@ -1,193 +1,171 @@
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient, ObjectId, Db, WithId} from 'mongodb';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
-const database_name = "";
-
-//User data for a specific game
-interface UserGameData {
-  user_id: string;
-  username: string;
-  current_game_stats: {
-    rounds: number;
-    rounds_won: number;
-    score: number;
-    topics_correct: [];
-    topics_incorrect: [];
-  };
+if (!uri) {
+  throw new Error('MONGODB_URI is not defined in the environment variables');
 }
 
-// Result for a specific game
-interface GameResult {
+const client = new MongoClient(uri);
+const database_name = 'hacksheffield_codeclash';
+
+export interface UserGameData {
+  user_id: string;
+  username: string;
+  rounds: number;
+  rounds_won: number;
+  score: number;
+  topics_correct: string[];
+  topics_incorrect: string[];
+}
+
+export interface GameData {
   _id?: ObjectId;
   game_id: string;
   date: Date;
-  players: {
-    user_id: string;
-    username: string;
-    final_score: number;
-    game_won: boolean;
-  }[];
+  players: UserGameData[];
   total_rounds: number;
+  player_count: number;
+  status: 'in_progress' | 'completed';
 }
 
-async function connectToDatabase() {
-  try {
-    await client.connect();
-    console.log("Connected to MongoDB Atlas");
-    return client.db(database_name);
-  } catch (error) {
-    console.error("Error connecting to MongoDB Atlas:", error);
-    throw error;
+export interface UserProfile {
+  _id?: ObjectId;
+  user_id: string;
+  username: string;
+  total_games: number;
+  total_score: number;
+  games_won: number;
+  game_history: {
+    game_id: string;
+    date: Date;
+    score: number;
+  }[];
+}
+
+let db: Db | null = null;
+
+async function connectToDatabase(): Promise<Db> {
+  if (!db) {
+    try {
+      await client.connect();
+      console.log("Connected to MongoDB Atlas");
+      db = client.db(database_name);
+    } catch (error) {
+      console.error("Error connecting to MongoDB Atlas:", error);
+      throw error;
+    }
   }
+  return db;
 }
 
+//Saves new game to the database, the status of said database will be "in_progress"
 export async function createGame(gameId: string, totalRounds: number): Promise<string> {
   const db = await connectToDatabase();
-  const collection = db.collection<GameResult>("game_results");
+  const collection = db.collection<GameData>("games");
 
-  const result = await collection.insertOne({
+  await collection.insertOne({
     game_id: gameId,
     date: new Date(),
     players: [],
-    total_rounds: totalRounds
+    total_rounds: totalRounds,
+    player_count: 0,
+    status: 'in_progress'
   });
 
-  return result.insertedId.toString();
+  return gameId;
 }
 
+//Updates the player data in the current game being played
 export async function updatePlayerStats(gameId: string, playerData: UserGameData): Promise<void> {
   const db = await connectToDatabase();
-  const collection = db.collection<GameResult>("game_results");
+  const gamesCollection = db.collection<GameData>("games");
 
-  await collection.updateOne(
-    { game_id: gameId },
-    {
-      $set: {
-        [`players.${playerData.user_id}`]: {
-          username: playerData.username,
-          final_score: playerData.current_game_stats.score,
-          questions_answered: playerData.current_game_stats.questions_answered
-        }
+  await gamesCollection.updateOne(
+      { game_id: gameId },
+      {
+        $push: { players: playerData },
+        $inc: { player_count: 1 }
       }
-    },
-    { upsert: true }
   );
 }
 
-export async function finalizeGame(gameId: string): Promise<GameResult> {
+//When a game is finished, call this function and it marks its status as finished and adds the completion date/time
+export async function finalizeGame(gameId: string): Promise<WithId<GameData>> {
   const db = await connectToDatabase();
-  const collection = db.collection<GameResult>("game_results");
+  const gamesCollection = db.collection<GameData>("games");
 
-  const gameResult = await collection.findOneAndUpdate(
-    { game_id: gameId },
-    { $set: { date: new Date() } },
-    { returnDocument: 'after' }
+  const updateResult = await gamesCollection.findOneAndUpdate(
+      { game_id: gameId },
+      {
+        $set: {
+          status: 'completed',
+          date: new Date()
+        }
+      },
+      { returnDocument: 'after' }
   );
 
-  if (!gameResult.value) {
-    throw new Error(`Game with id ${gameId} not found`);
+  if (!updateResult) {
+    throw new Error(`Game with id ${gameId} not found in database`);
   }
 
-  return gameResult.value;
+  return updateResult;
 }
 
-export async function getGameResult(gameId: string): Promise<GameResult | null> {
+//Gets the game data for a specific gameID
+export async function getGameResult(gameId: string): Promise<GameData | null> {
   const db = await connectToDatabase();
-  const collection = db.collection<GameResult>("game_results");
+  const gamesCollection = db.collection<GameData>("games");
 
-  return await collection.findOne({ game_id: gameId });
+  return await gamesCollection.findOne({ game_id: gameId });
 }
 
-export async function updateUserProfile(userId: string, gameResult: GameResult): Promise<void> {
+//Updates the user's profile after a game
+export async function updateUserProfile(userId: string, gameData: GameData): Promise<void> {
   const db = await connectToDatabase();
-  const collection = db.collection("user_profiles");
+  const userCollection = db.collection<UserProfile>("user_profiles");
 
-  const playerResult = gameResult.players.find(player => player.user_id === userId);
-  if (!playerResult) return;
+  const playerData = gameData.players.find(p => p.user_id === userId);
+  if (!playerData) {
+    throw new Error(`User ${userId} not found in game ${gameData.game_id}`);
+  }
 
-  await collection.updateOne(
-    { user_id: userId },
-    {
-      $inc: {
-        total_games: 1,
-        total_score: playerResult.final_score,
-        total_questions_answered: playerResult.questions_answered,
-        games_won: playerResult.game_won ? 1 : 0
-        // TODO: Add topics that they get correct or struggle with
-      },
-      $push: {
-        game_history: {
-          game_id: gameResult.game_id,
-          date: gameResult.date,
-          score: playerResult.final_score,
-          questions_answered: playerResult.questions_answered
+  const gameHistoryEntry = {
+    game_id: gameData.game_id,
+    date: gameData.date,
+    score: playerData.score
+  };
+
+  await userCollection.updateOne(
+      { user_id: userId },
+      {
+        $inc: {
+          total_games: 1,
+          total_score: playerData.score,
+          games_won: playerData.rounds_won > (gameData.total_rounds / 2) ? 1 : 0
+        },
+        $push: {
+          game_history: gameHistoryEntry
+        },
+        $setOnInsert: {
+          username: playerData.username
         }
-      }
-    },
-    { upsert: true }
+      },
+      { upsert: true }
   );
+}
+
+export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+  const db = await connectToDatabase();
+  const userCollection = db.collection<UserProfile>("user_profiles");
+
+  return await userCollection.findOne({ user_id: userId });
 }
 
 export async function closeConnection(): Promise<void> {
   await client.close();
   console.log("Disconnected from MongoDB Atlas");
+  db = null;
 }
-
-
-/* This is how the above functions should be called:
-
-import * as Party from "partykit/server";
-import * as db from './dbOperations';
-
-export default class MyPartyServer extends Party.Server {
-  gameId: string;
-
-  constructor(readonly room: Party.Room) {
-    super(room);
-    this.gameId = `game_${Math.random().toString(36).substr(2, 9)}`;
-  }
-
-  async onConnect(conn: Party.Connection) {
-    if (this.room.connections.size === 1) {
-      // First player joined, create the game
-      await db.createGame(this.gameId, 5); // 5 rounds
-    }
-    // ... rest of your connection logic
-  }
-
-  async onMessage(message: string, sender: Party.Connection) {
-    // ... your message handling logic
-
-    if (message === 'END_ROUND') {
-      // Update player stats at the end of each round
-      await db.updatePlayerStats(this.gameId, {
-        user_id: sender.id,
-        username: sender.state.username,
-        current_game_stats: sender.state.gameStats
-      });
-    }
-
-    if (message === 'END_GAME') {
-      // Finalize the game
-      const finalGameResult = await db.finalizeGame(this.gameId);
-
-      // Update each player's profile
-      for (const conn of this.room.connections) {
-        await db.updateUserProfile(conn.id, finalGameResult);
-      }
-
-      // Broadcast game results to all players
-      this.room.broadcast(JSON.stringify({
-        type: 'GAME_RESULTS',
-        results: finalGameResult
-      }));
-    }
-  }
-
-  async onClose() {
-    // Close the database connection when the server shuts down
-    await db.closeConnection();
-  }
-}
-*/

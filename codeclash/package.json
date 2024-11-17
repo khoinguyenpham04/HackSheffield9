@@ -2,6 +2,7 @@
   "name": "codeclash",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +13,9 @@
     "@radix-ui/react-slot": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
     "lucide-react": "^0.460.0",
+    "mongodb": "^6.10.0",
     "next": "15.0.3",
     "partykit": "^0.0.111",
     "partysocket": "^1.0.2",
