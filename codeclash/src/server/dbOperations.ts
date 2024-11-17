@@ -1,31 +1,31 @@
 type Player = {
-  userID : string,
-  username : string, 
-  answers : {questionID : string, question_type : string, userAnswer : string, rightAnswer : string, isCorrect : boolean}[]
-}
-const gameState : {gameID : string, players: Player[]} = {gameID: "", players: []}
+  userID: string,
+  username: string,
+  answers: { questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean; }[];
+};
+const gameState: { gameID: string, players: Player[]; } = { gameID: "", players: [] };
 
 export async function createGame(gameID: string) {
-  gameState.gameID = gameID
+  gameState.gameID = gameID;
 }
 
-export async function addUserAnswer(userID: string, questionID : string, question_type: string, userAnswer : string, rightAnswer: string, isCorrect: boolean) {
+export async function addUserAnswer(userID: string, questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean) {
   if (!gameState.players.find(player => player.userID == userID)) {
-    gameState.players.push({userID, username : userID, answers : []})
+    gameState.players.push({ userID, username: userID, answers: [] });
   }
-  const qResponse = {questionID, question_type, userAnswer, rightAnswer, isCorrect}
-  gameState.players.find(player => player.userID == userID)!.answers.push(qResponse)
+  const qResponse = { questionID, question_type, userAnswer, rightAnswer, isCorrect };
+  gameState.players.find(player => player.userID == userID)!.answers.push(qResponse);
 }
 
 type LLMReturn = {
-  generalFeedback : string,
-  userSpecificFeedback: Map<string, string>}
+  generalFeedback: string,
+  userSpecificFeedback: Map<string, string>;
+};
 
-export async function finalizeGame(): Promise<undefined> {
-  const feedback: Map<string, string> = new Map()
+export async function finalizeGame(): Promise<LLMReturn> {
+  const feedback: Map<string, string> = new Map();
   const url = "http://52.56.54.123:5000/analyze-quiz";
   const body = JSON.stringify(gameState);
-  console.log(body)
 
   const init = {
     body: JSON.stringify(body),
@@ -34,10 +34,28 @@ export async function finalizeGame(): Promise<undefined> {
       "content-type": "application/json;charset=UTF-8",
     },
   };
-  const response = await fetch(url, init);
-  const resp = await response.json();
-  console.log(resp)
-  return 
+  try {
+    const response = await fetch(url, init);
+    if (response.status !== 200) {
+      console.error("LLM not loading");
+      for (const p of gameState.players) {
+        feedback.set(p.userID, "Specific feedback");
+      }
+      return { generalFeedback: "General feedback", userSpecificFeedback: feedback };
+    }
+    const resp = await response.json();
+    console.log(resp)
+
+  } catch {
+    console.error("LLM errored");
+      for (const p of gameState.players) {
+        feedback.set(p.userID, "Specific feedback");
+      }
+      return { generalFeedback: "General feedback", userSpecificFeedback: feedback };
+  }
+  console.log("llm response");
+  console.log(resp);
+  return;
 }
 
 /*

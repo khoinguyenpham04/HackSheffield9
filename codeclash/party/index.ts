@@ -76,8 +76,8 @@ export default class Server implements Party.Server {
 					if (!this.gameStarted) {
 						this.gameStarted = true
 						const players: { user_id: string, username: string }[] = []
-						for (const playID in this.room.getConnections()) {
-							players.push({user_id: playID, username: playID});
+						for (const connection of this.room.getConnections()) {
+							players.push({user_id: connection.id, username: connection.id});
 						}
 						db.createGame(this.room.id)
 					}
@@ -100,7 +100,7 @@ export default class Server implements Party.Server {
 						answer: questions[this.qNum].answer,
 						questionInfo: questions[this.qNum].info
 					}
-					for (const user in this.usersPendingAnswers) {
+					for (const user of this.usersPendingAnswers) {
 						// user has failed to answer question
 						this.room.getConnection(user)?.send(JSON.stringify(response))
 					}
@@ -120,6 +120,7 @@ export default class Server implements Party.Server {
 					this.room.broadcast(JSON.stringify(response))
 					break;
 				case "endGame":
+					const { generalFeedback, userSpecificFeedback } = await db.finalizeGame()
 					response = {
 						type: "endLobby",
 						feedback: "", // personalised feedback unimplemented
@@ -129,11 +130,14 @@ export default class Server implements Party.Server {
 							return acc;
 						}, {})
 					}
-					await db.finalizeGame()
+					for (const pID of userSpecificFeedback.keys()) {
+						response.feedback = userSpecificFeedback.get(pID)!
+						this.room.getConnection(pID)!.send(JSON.stringify(response))
+					}
 					// TODO personalise feedback, general feedback of everyone for host
-
+					response.feedback = generalFeedback
 					this.inEndLobby = true;
-					this.room.broadcast(JSON.stringify(response))
+					this.room.broadcast(JSON.stringify(response), [...userSpecificFeedback.keys()])
 					break;
 				/* default:
 					console.error(`Host command ${message_json} not supported`)
@@ -156,7 +160,7 @@ export default class Server implements Party.Server {
 					feedback = questions[this.qNum].explanation
 				}
 
-				db.addUserAnswer()
+				db.addUserAnswer(sender.id, this.qNum.toString(), questions[this.qNum].topic, message_json.answer, questions[this.qNum].answer, correct)
 
 				response = {
 					type: "feedback",
