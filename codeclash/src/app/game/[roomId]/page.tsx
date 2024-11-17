@@ -1,21 +1,28 @@
 import BackendHookup from "@/components/backendHookup";
-import { fetchLeetCodeQuestions } from "@/app/api/leetcode-questions";
+import { Question } from "../../../../party/questions"; // Make sure path is correct
 
 export default async function GameRoom({
-                                         params,
+                                           params,
                                        }: {
-  params: { roomId: string };
+    params: { roomId: string };
 }) {
-  // Fetch LeetCode questions
-  const questions = await fetchLeetCodeQuestions();
+    // If you want to pass the initial question:
+    const initialQuestion: Question = {
+        info: {
+            questionType: "multiSelect",
+            questionDescription: "Initial question",
+            codeSnippet: "",
+            answerOptions: []
+        },
+        answer: "",
+        topic: "",
+        explanation: ""
+    };
 
-  // Select a random question for the game
-  const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-
-  return (
-      <BackendHookup
-          roomID={params.roomId}
-          initialQuestion={randomQuestion}
-      />
-  );
+    return (
+        <BackendHookup
+            roomID={params.roomId}
+            initialQuestion={initialQuestion}
+        />
+    );
 }

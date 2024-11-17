@@ -1,4 +1,5 @@
 import { initializeQuestions, questions } from "./questions"
+import { fetchLeetCodeQuestions } from '@/components/api/leetcode-questions'
 import type * as Party from "partykit/server";
 import * as Messages from "@/types/messages"
 
@@ -14,14 +15,18 @@ export default class Server implements Party.Server {
 		console.log("Room created:", room.id);
 	}
 
-	async onStart() {
-		// Initialize questions first
-		await initializeQuestions();
+	onStart = async () => {
+		try {
+			// Initialize questions first
+			await initializeQuestions();
 
-		// Load any saved state
-		const savedState = await this.room.storage.get("gameState");
-		if (savedState) {
-			Object.assign(this, savedState);
+			// Load any saved state
+			const savedState = await this.room.storage.get("gameState");
+			if (savedState) {
+				Object.assign(this, savedState);
+			}
+		} catch (error) {
+			console.error("Failed to initialize questions:", error);
 		}
 	}
 

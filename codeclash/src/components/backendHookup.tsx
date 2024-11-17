@@ -10,8 +10,15 @@ import ClientWaitForHost from "./waiting-for-host";
 import { Spinner } from "./loading-spinner";
 import { HostDisplay } from "./host-display";
 import { EndLobby } from "./end-lobby";
+import {Question} from "../../party/questions";
 
-export default function BackendHookup({ roomID }: { roomID: string }) {
+
+interface BackendHookupProps {
+	roomID: string;
+	initialQuestion?: Question; // Make it optional with ?
+}
+
+export default function BackendHookup({ roomID, initialQuestion }: BackendHookupProps) {
 	const [state, setState] = useState<Messages.ServerMessage | { type: "loading" } | null>(null);
 	const [isHost, setHost] = useState<boolean>(false);
 	const [leaderboard, setLeaderboard] = useState<Map<string, number>>(new Map());
@@ -129,14 +136,20 @@ function displayGameState(
 			return <QuestionComponent answerCallback={answerCallback} qInfo={state.questionInfo} />;
 		case "questionEnd":
 			return (
-				<ClientWaitForHost 
+				<ClientWaitForHost
 					message={`Question ${state.currentQuestion} of ${state.totalQuestions} completed`}
 				/>
 			);
 		case "feedback":
 			return <ResultPageComponent results={state} />;
 		case "endLobby":
-			return <EndLobby host={false} feedback={state.feedback} leaderboard={state.leaderboard} />;
+			return (
+				<EndLobby
+					host={false}
+					feedback={state.feedback}
+					leaderboard={new Map(Object.entries(state.leaderboard))}
+				/>
+			);
 		default:
 			return <ClientWaitForHost />;
 	}

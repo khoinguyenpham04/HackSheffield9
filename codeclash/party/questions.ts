@@ -1,5 +1,5 @@
 import * as Messages from "@/types/messages"
-import { fetchLeetCodeQuestions } from "@/components/api/leetcode-questions"
+import { fetchLeetCodeQuestions } from "../src/components/api/leetcode-questions"
 
 export type Question = {
   info: Messages.QuestionInfo,
@@ -8,8 +8,8 @@ export type Question = {
   explanation: string
 }
 
-// Your existing questions
-export const existingQuestions: Question[] = [
+// Default questions as fallback
+export const defaultQuestions: Question[] = [
   {
     info: {
       questionType: "multiSelect",
@@ -27,7 +27,7 @@ console.log(arr);`,
     },
     answer: "[0, 1, 2, 3, 4]",
     topic: "arrays",
-    explanation: "test explanation"
+    explanation: "push adds to the end, unshift adds to the beginning"
   },
   {
     info: {
@@ -46,70 +46,30 @@ console.log(arr);`,
     },
     answer: "4",
     topic: "promises",
-    explanation: "very much a test explanation"
-  },
-  {
-    info: {
-      questionType: "multiSelect",
-      questionDescription: "What will this code output?",
-      codeSnippet: `const obj = { a: 1 };
-const arr = [obj, obj];
-arr[1].a = 2;
-console.log(arr[0].a);`,
-      answerOptions: [
-        "1",
-        "2",
-        "undefined",
-        "Error"
-      ]
-    },
-    answer: "2",
-    topic: "references",
-    explanation: "are you even reading this?"
-  },
-  {
-    info: {
-      questionType: "string",
-      questionDescription: "What will be the value of 'result'?",
-      codeSnippet: `const numbers = [1, 2, 3, 4, 5];
-const result = numbers.reduce((sum, num) => sum + num, 0);`
-    },
-    answer: "15",
-    topic: "arrays",
-    explanation: "testing"
-  },
-  {
-    info: {
-      questionType: "multiSelect",
-      questionDescription: "What is the output of this async code?",
-      codeSnippet: `async function example() {
-  return 'Hello';
-}
-console.log(example());`,
-      answerOptions: [
-        "'Hello'",
-        "Promise { 'Hello' }",
-        "undefined",
-        "Error"
-      ]
-    },
-    answer: "Promise { 'Hello' }",
-    topic: "async",
-    explanation: "meow"
+    explanation: "The Promise chain executes sequentially: 1 -> 2 -> 4"
   }
 ];
 
-// Initialize combined questions
-export let questions: Question[] = existingQuestions;
+// Initialize with default questions
+export let questions: Question[] = defaultQuestions;
 
-// Function to initialize questions including LeetCode ones
 export async function initializeQuestions() {
   try {
-    const leetCodeQuestions = await fetchLeetCodeQuestions();
-    questions = [...existingQuestions, ...leetCodeQuestions];
+    console.log('Fetching LeetCode questions...');
+    const leetcodeQuestions = await fetchLeetCodeQuestions(3); // Fetch 3 LeetCode questions
+
+    if (leetcodeQuestions.length > 0) {
+      // Combine LeetCode questions with default questions
+      questions = [...leetcodeQuestions, ...defaultQuestions];
+      console.log(`Successfully loaded ${leetcodeQuestions.length} LeetCode questions`);
+    } else {
+      console.log('No LeetCode questions fetched, using default questions');
+    }
+
     return questions;
   } catch (error) {
     console.error("Failed to fetch LeetCode questions:", error);
-    return existingQuestions; // Fallback to existing questions if fetch fails
+    console.log('Using default questions as fallback');
+    return defaultQuestions;
   }
 }

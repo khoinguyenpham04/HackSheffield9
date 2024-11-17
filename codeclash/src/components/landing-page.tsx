@@ -34,19 +34,23 @@ export function LandingPage() {
   }
 
   const handleCreateGame = async () => {
-    const newGameId = generateId()
-
     try {
-      const response = await fetch('/api/leetcode-questions')
-      const questions = await response.json()
+      const newGameId = generateId()
 
-      // Store the questions in localStorage or state management solution
-      localStorage.setItem(`game_${newGameId}_questions`, JSON.stringify(questions))
+      // First create the game
+      await fetch('/api/create-game', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ gameId: newGameId }),
+      });
 
+      // Then navigate to the game page
       router.push(`/game/${newGameId}`)
     } catch (error) {
-      console.error('Failed to fetch LeetCode questions:', error)
-      // Handle error (e.g., show an error message to the user)
+      console.error('Error creating game:', error)
+      // Add error handling UI if needed
     }
   }
 

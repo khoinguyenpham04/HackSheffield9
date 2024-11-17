@@ -1,24 +1,27 @@
-export const questions = [
-  {
-    info: {
-      questionType: "string",
-      questionDescription: "What will console.log output?",
-      codeSnippet: `let x = 1;
-{
-  let x = 2;
-  console.log(x);
-}`,
-      answerOptions: undefined
-    },
-    answer: "2"
-  },
-  {
-    info: {
-      questionType: "string",
-      questionDescription: "What is the result of this expression?",
-      codeSnippet: `[1, 2, 3].map(x => x * 2).reduce((a, b) => a + b, 0)`,
-      answerOptions: undefined
-    },
-    answer: "12"
+import * as Messages from "@/types/messages"
+import { fetchLeetCodeQuestions } from "@/components/api/leetcode-questions"
+
+export type Question = {
+  info: Messages.QuestionInfo,
+  answer: string,
+  topic: string,
+  explanation: string
+}
+
+// Keep your existing questions as fallback
+const defaultQuestions: Question[] = [
+  // ... your existing questions ...
+];
+
+export let questions: Question[] = defaultQuestions;
+
+export async function initializeQuestions() {
+  try {
+    const leetcodeQuestions = await fetchLeetCodeQuestions(5);
+    questions = [...leetcodeQuestions];
+    return questions;
+  } catch (error) {
+    console.error("Failed to fetch LeetCode questions:", error);
+    return defaultQuestions;
   }
-]; 
+}

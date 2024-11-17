@@ -1,49 +1,55 @@
 'use client'
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 
 type params = {
-	host: boolean, // if true then it is the host
+	host: boolean,
 	feedback: string,
-	leaderboard: Map<string, number>
+	leaderboard: { [key: string]: number } // Changed from Map to object type
 }
+
 export function EndLobby({ feedback, leaderboard }: params) {
 	const router = useRouter()
 	console.log(leaderboard)
-	const sortedScores = Array.from(Object.entries(leaderboard))
+
+	// Sort the leaderboard entries
+	const sortedScores = Object.entries(leaderboard)
 		.sort(([, a], [, b]) => b - a)
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-purple-600 to-blue-600 p-8">
-			<Card className="max-w-2xl mx-auto">
-				<CardHeader>
-					<CardTitle className="text-2xl text-center">Game Over!</CardTitle>
-				</CardHeader>
-				<CardContent className="space-y-6">
-					{feedback && (
-						<p className="text-center text-gray-600">{feedback}</p>
-					)}
-					
+		<div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-8">
+			<div className="max-w-2xl mx-auto bg-white rounded-xl shadow-2xl p-8">
+				<h1 className="text-3xl font-bold text-center mb-8">Game Over!</h1>
+
+				<div className="mb-8">
+					<h2 className="text-2xl font-semibold mb-4">Final Scores</h2>
 					<div className="space-y-4">
-						<h3 className="text-xl font-semibold">Final Scores</h3>
-						{sortedScores.map(([playerId, score], index) => (
-							<div key={playerId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-								<span>#{index + 1} Player {playerId.slice(0, 8)}</span>
-								<span className="font-bold">{score}</span>
+						{sortedScores.map(([userId, score], index) => (
+							<div
+								key={userId}
+								className="flex justify-between items-center p-4 bg-gray-50 rounded-lg"
+							>
+								<span className="font-medium">Player {userId}</span>
+								<span className="text-lg font-bold">{score} points</span>
 							</div>
 						))}
 					</div>
+				</div>
 
-					<Button 
-						onClick={() => router.push('/')}
-						className="w-full mt-4"
-					>
-						Back to Home
-					</Button>
-				</CardContent>
-			</Card>
+				{feedback && (
+					<div className="mb-8">
+						<h2 className="text-2xl font-semibold mb-4">Feedback</h2>
+						<p className="text-gray-700">{feedback}</p>
+					</div>
+				)}
+
+				<button
+					onClick={() => router.push('/')}
+					className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+				>
+					Return to Home
+				</button>
+			</div>
 		</div>
 	)
 }

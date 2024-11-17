@@ -47,3 +47,32 @@ export type ServerMessage = {
 	type: "leaderboardUpdate",
 	leaderboard: Map<string, number>
 }
+
+export interface EndLobbyMessage {
+	type: "endLobby";
+	feedback: string;
+	leaderboard: { [key: string]: number };
+}
+
+export interface CodeSubmission {
+	code: string;
+	language: string;
+	questionId: string;
+}
+
+export interface TestCase {
+	input: string;
+	expectedOutput: string;
+}
+
+export interface ExecutionResult {
+	success: boolean;
+	output: string;
+	error?: string;
+	testCases?: {
+		passed: boolean;
+		input: string;
+		expected: string;
+		actual: string;
+	}[];
+}

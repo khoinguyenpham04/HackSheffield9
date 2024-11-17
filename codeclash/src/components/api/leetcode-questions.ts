@@ -2,36 +2,65 @@
 import * as Messages from "@/types/messages"
 import { Question } from "../../../party/questions"
 
-interface LeetCodeAPIResponse {
+interface LeetCodeQuestion {
     title: string;
-    content: string;
-    code: string;
     difficulty: string;
+    titleSlug: string;
+    questionFrontendId: string;
+    topicTags: Array<{
+        name: string;
+        slug: string;
+    }>;
 }
 
-export async function fetchLeetCodeQuestions(): Promise<Question[]> {
-    // This is a placeholder for actual LeetCode API integration
-    const leetcodeQuestions: Question[] = [
-        {
-            info: {
-                questionType: "multiSelect",
-                questionDescription: "Two Sum: Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.",
-                codeSnippet: `function twoSum(nums: number[], target: number): number[] {
-    // Your code here
-}`,
-                answerOptions: [
-                    "Use nested loops (O(n²))",
-                    "Use hash map (O(n))",
-                    "Sort and use two pointers",
-                    "Use binary search"
-                ]
-            },
-            answer: "Use hash map (O(n))",
-            topic: "arrays",
-            explanation: "Using a hash map allows us to solve this in O(n) time complexity by storing complements"
-        },
-        // Add more LeetCode-style questions following your format
-    ];
+interface LeetCodeResponse {
+    totalQuestions: number;
+    count: number;
+    problemsetQuestionList: LeetCodeQuestion[];
+}
 
-    return leetcodeQuestions;
+export async function fetchLeetCodeQuestions(limit: number = 5): Promise<Question[]> {
+    try {
+        const response = await fetch(`https://alfa-leetcode-api.onrender.com/problems?limit=${limit}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data: LeetCodeResponse = await response.json();
+        console.log('API Response:', data);
+
+        // Check if the response has the expected structure
+        if (!data.problemsetQuestionList || !Array.isArray(data.problemsetQuestionList)) {
+            throw new Error('Invalid API response format');
+        }
+
+        const questions: Question[] = data.problemsetQuestionList.map((q: LeetCodeQuestion): Question => {
+            return {
+                info: {
+                    questionType: "multiSelect",
+                    questionDescription: `Problem ${q.questionFrontendId}: ${q.title}`,
+                    codeSnippet: `// LeetCode Problem ${q.questionFrontendId}: ${q.title}
+function solution() {
+  // Your code here
+}`,
+                    answerOptions: [
+                        "Time Complexity: O(n) using HashMap",
+                        "Time Complexity: O(n²) using nested loops",
+                        "Time Complexity: O(n log n) using sorting",
+                        "Time Complexity: O(1) using math"
+                    ]
+                },
+                answer: "Time Complexity: O(n) using HashMap", // Default answer
+                topic: q.difficulty.toLowerCase(),
+                explanation: `This is a ${q.difficulty} level problem focusing on ${
+                    q.topicTags?.map(tag => tag.name).join(', ') || 'algorithms'
+                }.`
+            };
+        });
+
+        return questions;
+    } catch (error) {
+        console.error('Error fetching LeetCode questions:', error);
+        return [];
+    }
 }
