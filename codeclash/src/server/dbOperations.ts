@@ -1,4 +1,4 @@
-import { MongoClient, ObjectId, Db, WithId} from 'mongodb';
+// import { MongoClient, ObjectId, Db, WithId} from 'mongodb';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -7,8 +7,9 @@ if (!uri) {
   throw new Error('MONGODB_URI is not defined in the environment variables');
 }
 
-const client = new MongoClient(uri);
-const database_name = 'hacksheffield_codeclash';
+// const client = new MongoClient(uri);
+// const database_name = 'hacksheffield_codeclash';
+const database_uri = '';
 
 export interface UserGameData {
   user_id: string;
@@ -22,7 +23,6 @@ export interface UserGameData {
 }
 
 export interface GameData {
-  _id?: ObjectId;
   game_id: string;
   date: Date;
   players: UserGameData[];
@@ -33,7 +33,6 @@ export interface GameData {
 }
 
 export interface UserProfile {
-  _id?: ObjectId;
   user_id: string;
   username: string;
   total_games: number;
