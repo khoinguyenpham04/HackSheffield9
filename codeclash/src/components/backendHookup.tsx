@@ -11,7 +11,7 @@ import { Spinner } from "./loading-spinner";
 import { HostDisplay } from "./host-display";
 import { EndLobby } from "./end-lobby";
 
-export default function BackendHookup({ roomID }: { roomID: string }) {
+export default function BackendHookup({ roomID, username }: { roomID: string, username: string | undefined }) {
 	const [state, setState] = useState<Messages.ServerMessage | { type: "loading" } | null>(null);
 	const [isHost, setHost] = useState<boolean>(false);
 	const [leaderboard, setLeaderboard] = useState<Map<string, number>>(new Map());
@@ -20,6 +20,7 @@ export default function BackendHookup({ roomID }: { roomID: string }) {
 	const socket = usePartySocket({
 		host: PARTYKIT_HOST,
 		room: roomID,
+		id: username,
 		onMessage(event) {
 			try {
 				const message = JSON.parse(event.data) as Messages.ServerMessage;

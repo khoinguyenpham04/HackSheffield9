@@ -2,6 +2,7 @@ import type * as Party from "partykit/server";
 import * as Messages from "@/types/messages"
 
 import {questions} from "./questions"
+import * as db from "@/server/dbOperations";
 
 export default class Server implements Party.Server {
 	host = "";
@@ -10,18 +11,14 @@ export default class Server implements Party.Server {
 	inEndLobby = false;
 	userScores: Map<string, number> = new Map()
 	usersPendingAnswers: Set<string> = new Set() 
+	usersQCorrect: Set<string> = new Set()
+	MAX_QUESTIONS = 3
 
 	constructor(readonly room: Party.Room) {
 		console.log("Room created:", room.id);
+		db.createGame(room.id, this.MAX_QUESTIONS)
 	}
 
-	async onStart() {
-		// Load any saved state
-		const savedState = await this.room.storage.get("gameState");
-		if (savedState) {
-			Object.assign(this, savedState);
-		}
-	}
 
 	async onConnect(connection: Party.Connection) {
 		// First connection becomes host
@@ -98,11 +95,14 @@ export default class Server implements Party.Server {
 						totalQuestions: questions.length
 					}
 					this.qNum += 1
-					if (this.qNum >= questions.length) {
+					if (this.qNum >= questions.length || this.qNum >= this.MAX_QUESTIONS) {
 						// Game over
 						response.gameOver = true
 						console.log("Game Over")
 					}
+					// write usersAnswerQ correct to DB
+
+					this.usersQCorrect = new Set()
 					
 					this.room.broadcast(JSON.stringify(response))
 					break;
@@ -118,6 +118,7 @@ export default class Server implements Party.Server {
 					// TODO personalise feedback, general feedback of everyone for host
 					this.inEndLobby = true;
 					this.room.broadcast(JSON.stringify(response))
+					db.finalizeGame(this.room.id, Object.keys(this.userScores).reduce((a, b) =>{ return (this.userScores!.get(a)! > this.userScores!.get(b)!) ? a : b }))
 					break;
 				/* default:
 					console.error(`Host command ${message_json} not supported`)
@@ -135,6 +136,7 @@ export default class Server implements Party.Server {
 				if (message_json.answer == questions[this.qNum].answer) {
 					correct = true;
 					this.updateScore(sender.id, 1000)
+					this.usersQCorrect.add(sender.id)
 				} else {
 					correct = false;
 					feedback = "Feedback for if wrong" // TODO add AI?
