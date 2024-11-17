@@ -160,7 +160,7 @@ export default class Server implements Party.Server {
 					feedback = questions[this.qNum].explanation
 				}
 
-				db.addUserAnswer(sender.id, this.qNum.toString(), questions[this.qNum].topic, message_json.answer, questions[this.qNum].answer, correct)
+				db.addUserAnswer(sender.id, questions[this.qNum].info.questionDescription, this.qNum.toString(), questions[this.qNum].topic, message_json.answer, questions[this.qNum].answer, correct)
 
 				response = {
 					type: "feedback",

@@ -1,7 +1,7 @@
 type Player = {
   userID: string,
   username: string,
-  answers: { questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean; }[];
+  answers: { questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean, question: string }[];
 };
 const gameState: { gameID: string, players: Player[]; } = { gameID: "", players: [] };
 
@@ -9,11 +9,11 @@ export async function createGame(gameID: string) {
   gameState.gameID = gameID;
 }
 
-export async function addUserAnswer(userID: string, questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean) {
+export async function addUserAnswer(userID: string, question: string, questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean) {
   if (!gameState.players.find(player => player.userID == userID)) {
     gameState.players.push({ userID, username: userID, answers: [] });
   }
-  const qResponse = { questionID, question_type, userAnswer, rightAnswer, isCorrect };
+  const qResponse = { questionID, question_type, userAnswer, rightAnswer, isCorrect, question };
   gameState.players.find(player => player.userID == userID)!.answers.push(qResponse);
 }
 
