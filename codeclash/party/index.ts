@@ -151,7 +151,7 @@ export default class Server implements Party.Server {
 			case "questionAnswer":
 				if (!this.inQuestions) return
 				let correct;
-				let feedback
+				let feedback = "Question correct"
 				if (message_json.answer == questions[this.qNum].answer) {
 					correct = true;
 					this.updateScore(sender.id, 1000)
