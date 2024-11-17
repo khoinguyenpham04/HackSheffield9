@@ -19,6 +19,13 @@ export default class Server implements Party.Server {
 		console.log("Room created:", room.id);
 	}
 
+	async onStart() {
+		// Load any saved state
+		const savedHost = await this.room.storage.get("host");
+		if (savedHost) {
+			this.host = savedHost as string
+		}
+	}
 
 	async onConnect(connection: Party.Connection) {
 		// First connection becomes host
@@ -28,6 +35,7 @@ export default class Server implements Party.Server {
 				type: "userJoin",
 				isHost: true
 			}))
+			this.room.storage.put("host", this.host)
 			return;
 		}
 
