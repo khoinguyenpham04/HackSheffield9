@@ -28,6 +28,7 @@ export interface GameData {
   total_rounds: number;
   player_count: number;
   status: 'in_progress' | 'completed';
+  winner_id?: string;
 }
 
 export interface UserProfile {
@@ -83,7 +84,7 @@ export async function updatePlayerStats(gameId: string, playerData: UserGameData
   const gamesCollection = db.collection<GameData>("games");
 
   await gamesCollection.updateOne(
-      { game_id: gameId },
+      { game_id: gameId, "players.user_id": { $ne: playerData.user_id } },
       {
         $push: { players: playerData },
         $inc: { player_count: 1 }
@@ -92,26 +93,48 @@ export async function updatePlayerStats(gameId: string, playerData: UserGameData
 }
 
 //When a game is finished, call this function and it marks its status as finished and adds the completion date/time
-export async function finalizeGame(gameId: string): Promise<WithId<GameData>> {
+export async function finalizeGame(gameId: string, winnerId: string): Promise<WithId<GameData>> {
   const db = await connectToDatabase();
   const gamesCollection = db.collection<GameData>("games");
 
-  const updateResult = await gamesCollection.findOneAndUpdate(
-      { game_id: gameId },
-      {
-        $set: {
-          status: 'completed',
-          date: new Date()
-        }
-      },
-      { returnDocument: 'after' }
-  );
+  const session = client.startSession();
 
-  if (!updateResult) {
-    throw new Error(`Game with id ${gameId} not found in database`);
+  try {
+    await session.withTransaction(async () => {
+      const updateResult = await gamesCollection.findOneAndUpdate(
+          { game_id: gameId },
+          {
+            $set: {
+              status: 'completed',
+              date: new Date(),
+              winner_id: winnerId
+            }
+          },
+          { returnDocument: 'after', session }
+      );
+
+      if (!updateResult) {
+        throw new Error(`Game with id ${gameId} not found in database`);
+      }
+
+      // Update all players' profiles
+      for (const player of updateResult.players) {
+        await updateUserProfile(player.user_id, updateResult);
+      }
+
+      return updateResult;
+    });
+
+    const finalGameData = await gamesCollection.findOne({ game_id: gameId });
+
+    if (!finalGameData) {
+      throw new Error(`Game with id ${gameId} not found after update`);
+    }
+
+    return finalGameData;
+  } finally {
+    await session.endSession();
   }
-
-  return updateResult;
 }
 
 //Gets the game data for a specific gameID
@@ -144,10 +167,13 @@ export async function updateUserProfile(userId: string, gameData: GameData): Pro
         $inc: {
           total_games: 1,
           total_score: playerData.score,
-          games_won: playerData.rounds_won > (gameData.total_rounds / 2) ? 1 : 0
+          games_won: gameData.winner_id === userId ? 1 : 0
         },
         $push: {
-          game_history: gameHistoryEntry
+          game_history: {
+            $each: [gameHistoryEntry],
+            $position: 0
+          }
         },
         $setOnInsert: {
           username: playerData.username
