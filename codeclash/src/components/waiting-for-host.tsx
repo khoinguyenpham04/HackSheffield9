@@ -76,18 +76,3 @@ export default function ClientWaitForHost({ message }: { message?: string }) {
     </div>
   )
 }
-
-// Add this to your global CSS file or in a style tag in your layout
-const styles = `
-  @keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
-  .shadow-neumorphism {
-    box-shadow: 
-      20px 20px 60px #d1d1d1,
-      -20px -20px 60px #ffffff;
-  }
-`;

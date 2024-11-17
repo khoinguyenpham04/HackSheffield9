@@ -9,7 +9,7 @@ type params = {
 	feedback: string,
 	leaderboard: Map<string, number>
 }
-export function EndLobby({ host, feedback, leaderboard }: params) {
+export function EndLobby({ feedback, leaderboard }: params) {
 	const router = useRouter()
 	console.log(leaderboard)
 	const sortedScores = Array.from(Object.entries(leaderboard))
