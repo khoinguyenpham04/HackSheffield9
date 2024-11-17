@@ -3,6 +3,7 @@ import type * as Party from "partykit/server";
 import * as Messages from "@/types/messages"
 
 import {questions} from "./questions"
+import * as db from "@/server/dbOperations";
 
 export default class Server implements Party.Server {
 	host = "";
@@ -11,6 +12,8 @@ export default class Server implements Party.Server {
 	inEndLobby = false;
 	userScores: Map<string, number> = new Map()
 	usersPendingAnswers: Set<string> = new Set() 
+	MAX_QUESTIONS = 3
+	gameStarted = false;
 
 	constructor(readonly room: Party.Room) {
 		console.log("Room created:", room.id);
@@ -70,6 +73,14 @@ export default class Server implements Party.Server {
 			switch (message_json.type) {
 				case "startQuestion":
 					this.inQuestions = true;
+					if (!this.gameStarted) {
+						this.gameStarted = true
+						const players: { user_id: string, username: string }[] = []
+						for (const connection of this.room.getConnections()) {
+							players.push({user_id: connection.id, username: connection.id});
+						}
+						db.createGame(this.room.id)
+					}
 					
 					response = {
 						type: "questionStart",
@@ -89,7 +100,7 @@ export default class Server implements Party.Server {
 						answer: questions[this.qNum].answer,
 						questionInfo: questions[this.qNum].info
 					}
-					for (const user in this.usersPendingAnswers) {
+					for (const user of this.usersPendingAnswers) {
 						// user has failed to answer question
 						this.room.getConnection(user)?.send(JSON.stringify(response))
 					}
@@ -101,15 +112,15 @@ export default class Server implements Party.Server {
 						totalQuestions: questions.length
 					}
 					this.qNum += 1
-					if (this.qNum >= questions.length) {
+					if (this.qNum >= questions.length || this.qNum >= this.MAX_QUESTIONS) {
 						// Game over
 						response.gameOver = true
 						console.log("Game Over")
 					}
-					
 					this.room.broadcast(JSON.stringify(response))
 					break;
 				case "endGame":
+					const { generalFeedback, userSpecificFeedback } = await db.finalizeGame()
 					response = {
 						type: "endLobby",
 						feedback: "", // personalised feedback unimplemented
@@ -119,9 +130,14 @@ export default class Server implements Party.Server {
 							return acc;
 						}, {})
 					}
+					for (const pID of userSpecificFeedback.keys()) {
+						response.feedback = userSpecificFeedback.get(pID)!
+						this.room.getConnection(pID)?.send(JSON.stringify(response))
+					}
 					// TODO personalise feedback, general feedback of everyone for host
+					response.feedback = generalFeedback
 					this.inEndLobby = true;
-					this.room.broadcast(JSON.stringify(response))
+					this.room.broadcast(JSON.stringify(response), [...userSpecificFeedback.keys()])
 					break;
 				/* default:
 					console.error(`Host command ${message_json} not supported`)
@@ -141,8 +157,11 @@ export default class Server implements Party.Server {
 					this.updateScore(sender.id, 1000)
 				} else {
 					correct = false;
-					feedback = "Feedback for if wrong" // TODO add AI?
+					feedback = questions[this.qNum].explanation
 				}
+
+				db.addUserAnswer(sender.id, questions[this.qNum].info.questionDescription, this.qNum.toString(), questions[this.qNum].topic, message_json.answer, questions[this.qNum].answer, correct)
+
 				response = {
 					type: "feedback",
 					correct,

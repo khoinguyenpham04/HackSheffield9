@@ -7,5 +7,6 @@ export default async function GameRoom({
 }) {
   const { roomId } = await params
 
+  //@ts-expect-error
   return <BackendHookup roomID={roomId} />;
 } 

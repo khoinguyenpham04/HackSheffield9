@@ -1,4 +1,70 @@
-import { MongoClient, ObjectId, Db, WithId} from 'mongodb';
+type Player = {
+  userID: string,
+  username: string,
+  answers: { questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean, question: string }[];
+};
+const gameState: { gameID: string, players: Player[]; } = { gameID: "", players: [] };
+
+export async function createGame(gameID: string) {
+  gameState.gameID = gameID;
+}
+
+export async function addUserAnswer(userID: string, question: string, questionID: string, question_type: string, userAnswer: string, rightAnswer: string, isCorrect: boolean) {
+  if (!gameState.players.find(player => player.userID == userID)) {
+    gameState.players.push({ userID, username: userID, answers: [] });
+  }
+  const qResponse = { questionID, question_type, userAnswer, rightAnswer, isCorrect, question };
+  gameState.players.find(player => player.userID == userID)!.answers.push(qResponse);
+}
+
+type LLMReturn = {
+  generalFeedback: string,
+  userSpecificFeedback: Map<string, string>;
+};
+
+export async function finalizeGame(): Promise<LLMReturn> {
+  const feedback: Map<string, string> = new Map();
+  const url = "http://52.56.54.123:5000/analyze-quiz";
+  const body = JSON.stringify(gameState);
+
+  const init = {
+    body: JSON.stringify(body),
+    method: "POST",
+    headers: {
+      "content-type": "application/json;charset=UTF-8",
+    },
+  };
+  try {
+    console.log(init)
+    const response = await fetch(url, init);
+    if (response.status !== 200) {
+      console.log(response)
+      console.error("LLM not loading");
+      for (const p of gameState.players) {
+        feedback.set(p.userID, "Specific feedback");
+      }
+      return { generalFeedback: "General feedback", userSpecificFeedback: feedback };
+    }
+    const resp = await response.json();
+    console.log("proper response")
+    console.log(resp)
+    for (const p of resp.players) {
+      feedback.set(p.userID, p.feedback)
+    }
+    console.log(feedback)
+    return {generalFeedback: "general feedback", userSpecificFeedback: feedback}
+  } catch {
+    console.error("LLM errored");
+      for (const p of gameState.players) {
+        feedback.set(p.userID, "Specific feedback");
+      }
+      return { generalFeedback: "General feedback", userSpecificFeedback: feedback };
+  }
+}
+
+/*
+
+// import { MongoClient, ObjectId, Db, WithId} from 'mongodb';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
@@ -7,8 +73,9 @@ if (!uri) {
   throw new Error('MONGODB_URI is not defined in the environment variables');
 }
 
-const client = new MongoClient(uri);
-const database_name = 'hacksheffield_codeclash';
+// const client = new MongoClient(uri);
+// const database_name = 'hacksheffield_codeclash';
+const database_uri = '';
 
 export interface UserGameData {
   user_id: string;
@@ -22,7 +89,6 @@ export interface UserGameData {
 }
 
 export interface GameData {
-  _id?: ObjectId;
   game_id: string;
   date: Date;
   players: UserGameData[];
@@ -33,7 +99,6 @@ export interface GameData {
 }
 
 export interface UserProfile {
-  _id?: ObjectId;
   user_id: string;
   username: string;
   total_games: number;
@@ -228,3 +293,4 @@ export async function closeConnection(): Promise<void> {
   console.log("Disconnected from MongoDB Atlas");
   db = null;
 }
+*/
