@@ -47,7 +47,7 @@ export async function finalizeGame(): Promise<LLMReturn> {
     console.log("proper response")
     console.log(resp)
     for (const p of resp.players) {
-      feedback.set(p.userID, p.feedback)
+      feedback.set(p.userID, p.feedback.join('\n'))
     }
     console.log(feedback)
     return {generalFeedback: "general feedback", userSpecificFeedback: feedback}
