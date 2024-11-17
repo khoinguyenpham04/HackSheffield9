@@ -1,3 +1,13 @@
+export async function meow() {
+  return await fetch("https://example.com", {
+    headers: {
+      "X-Source": "Cloudflare-Workers",
+    },
+  });
+}
+
+/*
+
 // import { MongoClient, ObjectId, Db, WithId} from 'mongodb';
 import * as dotenv from 'dotenv';
 dotenv.config();
@@ -227,3 +237,4 @@ export async function closeConnection(): Promise<void> {
   console.log("Disconnected from MongoDB Atlas");
   db = null;
 }
+*/

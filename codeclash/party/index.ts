@@ -21,6 +21,9 @@ export default class Server implements Party.Server {
 
 
 	async onConnect(connection: Party.Connection) {
+		const meow = await db.meow()
+		console.log(meow.status)
+
 		// First connection becomes host
 		if (this.host == "") {
 			this.host = connection.id;
@@ -70,7 +73,7 @@ export default class Server implements Party.Server {
 						for (const playID in this.room.getConnections()) {
 							players.push({user_id: playID, username: playID});
 						}
-						db.createGame(this.room.id, this.MAX_QUESTIONS, players)
+						// db.createGame(this.room.id, this.MAX_QUESTIONS, players)
 					}
 					
 					response = {
@@ -108,7 +111,7 @@ export default class Server implements Party.Server {
 						response.gameOver = true
 						console.log("Game Over")
 					}
-					db.updatePlayerStats(this.room.id, [...this.correctUsers], questions[this.qNum].topic)
+					// db.updatePlayerStats(this.room.id, [...this.correctUsers], questions[this.qNum].topic)
 					this.correctUsers = new Set()
 					this.room.broadcast(JSON.stringify(response))
 					break;
@@ -121,7 +124,7 @@ export default class Server implements Party.Server {
 							return acc;
 						}, {})
 					}
-					await db.finalizeGame(this.room.id, Object.keys(this.userScores).reduce((a, b) =>{ return (this.userScores!.get(a)! > this.userScores!.get(b)!) ? a : b }))
+					// await db.finalizeGame(this.room.id, Object.keys(this.userScores).reduce((a, b) =>{ return (this.userScores!.get(a)! > this.userScores!.get(b)!) ? a : b }))
 					// TODO personalise feedback, general feedback of everyone for host
 
 					this.inEndLobby = true;
