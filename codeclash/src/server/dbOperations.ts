@@ -44,8 +44,13 @@ export async function finalizeGame(): Promise<LLMReturn> {
       return { generalFeedback: "General feedback", userSpecificFeedback: feedback };
     }
     const resp = await response.json();
+    console.log("proper response")
     console.log(resp)
-
+    for (const p of resp.players) {
+      feedback.set(p.userID, p.feedback)
+    }
+    console.log(feedback)
+    return {generalFeedback: "general feedback", userSpecificFeedback: feedback}
   } catch {
     console.error("LLM errored");
       for (const p of gameState.players) {
@@ -53,9 +58,6 @@ export async function finalizeGame(): Promise<LLMReturn> {
       }
       return { generalFeedback: "General feedback", userSpecificFeedback: feedback };
   }
-  console.log("llm response");
-  console.log(resp);
-  return;
 }
 
 /*
