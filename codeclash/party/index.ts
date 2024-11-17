@@ -18,9 +18,9 @@ export default class Server implements Party.Server {
 
 	async onStart() {
 		// Load any saved state
-		const savedState = await this.room.storage.get("gameState");
-		if (savedState) {
-			Object.assign(this, savedState);
+		const savedHost = await this.room.storage.get("host");
+		if (savedHost) {
+			this.host = savedHost as string
 		}
 	}
 
@@ -32,6 +32,7 @@ export default class Server implements Party.Server {
 				type: "userJoin",
 				isHost: true
 			}))
+			this.room.storage.put("host", this.host)
 			return;
 		}
 
